@@ -70,7 +70,7 @@ class StationRepository:
             station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
             station_df = self._handle_time_zone_related_issues(station_df, time_zone, start_date, end_date)
             if minutely:
-                station_df = self._create_minutely_dataframe(station_df, start_date, end_date)
+                station_df = self._create_minutely_data_frame(station_df, start_date, end_date, time_zone)
             meta_data = self._get_metadata(station)
             return {
                 "name": station,
@@ -117,8 +117,10 @@ class StationRepository:
         return station_df[start_date:end_date]
 
     @staticmethod
-    def _create_minutely_dataframe(station_df, start_date, end_date):
-        time_span_df = pandas.DataFrame(index=pandas.date_range(start_date, end_date, req='T', name="datetime"))
+    def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
+        time_span_df = pandas.DataFrame(index=pandas.date_range(start_date, end_date, req='T', name="datetime",
+                                                                time_zone=time_zone))
+        time_span_df = time_span_df.tz_localize("UTC").tz_convert(time_zone)
         station_df = station_df.join([time_span_df], how="outer")
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
         return station_df
