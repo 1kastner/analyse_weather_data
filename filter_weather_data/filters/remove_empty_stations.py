@@ -1,12 +1,12 @@
 """
 Checks if any data is provided during the given period.
+
+Run as script with '-m filter_weather_data.filters.remove_empty_stations'
 """
 
 import logging
 
-import dateutil.parser
-
-from . import load_station
+from . import StationRepository
 
 
 def check_station(station_df, start_date, end_date):
@@ -21,25 +21,27 @@ def check_station(station_df, start_date, end_date):
     return station_df.empty or station_df.temperature.count() == 0
 
 
-def filter_stations(stations, start_date, end_date):
+def filter_stations(station_dicts, start_date, end_date):
     """
 
-    :param stations: The name of the stations, e.g. ['IHAMBURG69']
+    :param station_dicts: The station dicts
     :param start_date: The date to start (included) 
     :param end_date: The date to stop (included)
     """
     filtered_stations = []
-    for station in stations:
-        if check_station(station, start_date, end_date):
-            filtered_stations.append(station)
+    for station_dict in station_dicts:
+        if check_station(station_dict["data_frame"], start_date, end_date):
+            filtered_stations.append(station_dict["name"])
     return filtered_stations
 
 
 def demo():
     start_date = "2016-01-01T00:00:00+01:00"
     end_date = "2016-12-31T00:00:00+01:00"
-    station_dfs = [load_station(station, start_date, end_date) for station in ['IHAMBURG69', 'IBNNINGS2']]
-    stations_with_data = filter_stations(station_dfs, start_date, end_date)
+    station_repository = StationRepository()
+    stations = ['IHAMBURG69', 'IBNNINGS2']
+    station_dicts = [station_repository.load_station(station, start_date, end_date) for station in stations]
+    stations_with_data = filter_stations(station_dicts, start_date, end_date)
     print(stations_with_data)
 
 

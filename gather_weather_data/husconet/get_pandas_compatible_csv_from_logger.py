@@ -1,5 +1,9 @@
 """
 This is rather a script than something reusable because it is highly dependent on the data provided.
+
+Run with
+-m gather_weather_data.husconet.get_pandas_compatible_csv_from_logger
+to start it as a standalone script.
 """
 
 import os
@@ -21,14 +25,22 @@ def load_husconet_station(station):
 
     csv_file = os.path.join(HUSCONET_RAW_DATA_DIR, "{station}_TT_201601010000-201612312359.txt".format(station=station))
     df = pandas.read_csv(csv_file, names=["temperature"], na_values=["99999"])
+    logging.debug("temperature")
 
     csv_file = os.path.join(HUSCONET_RAW_DATA_DIR, "{station}_RH_201601010000-201612312359.txt".format(station=station))
     df_relative_humidity = pandas.read_csv(csv_file, names=["humidity"], na_values=["99999"])
     df = df.assign(humidity=df_relative_humidity.humidity)
+    logging.debug("humidity")
 
     csv_file = os.path.join(HUSCONET_RAW_DATA_DIR, "{station}_P_201601010000-201612312359.txt".format(station=station))
     df_pressure = pandas.read_csv(csv_file, names=["pressure"], na_values=["99999"])
     df = df.assign(pressure=df_pressure.pressure)
+    logging.debug("pressure")
+
+    csv_file = os.path.join(HUSCONET_RAW_DATA_DIR, "{station}_G_201601010000-201612312359.txt".format(station=station))
+    df_pressure = pandas.read_csv(csv_file, names=["radiation"], na_values=["99999"])
+    df = df.assign(radiation=df_pressure.radiation)
+    logging.debug("radiation")
 
     # The logger are configured to use German standard time (no daylight saving).
     df.index = pandas.date_range('2016-01-01T00:00', '2016-12-31T23:59', freq='T', name="datetime", tz="CET")

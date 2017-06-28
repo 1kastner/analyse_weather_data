@@ -1,32 +1,36 @@
 """
 
+Run with '-m filter_weather_data.filters.remove_wrongly_positioned_stations' if you want to see the demo.
 """
+
 import logging
 
-from . import get_all_stations
+from . import StationRepository
 
 
-def check_station(station, meta_info_df):
+def check_station(station_dict, meta_info_df):
     """
     
-    :param station: The name of the station, e.g. 'IHAMBURG69'
+    :param station_dict: The station dict
     :param meta_info_df: The location of the station
     :return: Is it at a location which corresponds to NaN
     """
-    lat, lon = meta_info_df.loc[station]
+    station_name = station_dict["name"]
+    lat, lon = meta_info_df.loc[station_name]
     if lat == 0 and lon == 0:
-        logging.debug(station, "is located at 0, 0")
+        logging.debug(station_name, "is located at 0, 0")
         return False
     else:
         return True
 
 
-def filter_stations(stations):
+def filter_stations(station_dicts):
     """
 
-    :param stations: The name of the stations, e.g. ['IHAMBURG69']
+    :param station_dicts: The station dict
     """
-    meta_info_df = get_all_stations()
+    station_repository = StationRepository()
+    meta_info_df = station_repository.get_all_stations()
 
     # entries which are at the same coordinates
     duplicated_indices = meta_info_df.duplicated(["lat", "lon"], keep=False)
@@ -36,19 +40,20 @@ def filter_stations(stations):
     meta_info_df = meta_info_df[~duplicated_indices]
 
     filtered_stations = []
-    for station in stations:
-        print(station)
-        print(station in meta_info_df.index)
-        if station in meta_info_df.index and check_station(station, meta_info_df):
-            print(check_station(station, meta_info_df))
-            filtered_stations.append(station)
+    for station_dict in station_dicts:
+        if station_dict["name"] in meta_info_df.index and check_station(station_dict, meta_info_df):
+            filtered_stations.append(station_dict)
     return filtered_stations
 
 
 def demo():
-    stations = ['IHAMBURG69', 'IHAMBURG44']
-    stations_with_position = filter_stations(stations)
-    print(stations_with_position)
+    # Initialise data
+    StationRepository().get_all_stations()
+
+    stations = ['IHAMBURG69', 'IBNNINGS2']
+    station_dicts = [{"name": station} for station in stations]
+    stations_at_good_position = filter_stations(station_dicts)
+    print([station_dict["name"] for station_dict in stations_at_good_position])
 
 
 if __name__ == "__main__":

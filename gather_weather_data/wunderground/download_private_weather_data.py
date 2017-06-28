@@ -26,15 +26,26 @@ def get_data_for_day(station, day, force_overwrite):
     :return: Was the download successful
     """
     yyyymmdd = day.strftime("%Y%m%d")
+    yyyy_mm_dd = day.strftime("%Y-%m-%d")
     logging.info(day.strftime("%Y-%m-%d"))
     station_directory = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station)
     if not os.path.isdir(station_directory):
         os.mkdir(station_directory)
+
+    # Traditional format
     json_file_name = "{station_id}_{YYYYMMDD}.json".format(station_id=station, YYYYMMDD=yyyymmdd)
     json_file_path = os.path.join(station_directory, json_file_name)
     if os.path.isfile(json_file_path) and os.path.getsize(json_file_path) and not force_overwrite:
-        logging.info("skip download for {station} at {YYYYMMDD}".format(station=station, YYYYMMDD=yyyymmdd))
+        logging.info("skip download for {station} at {yyyy_mm_dd}".format(station=station, yyyy_mm_dd=yyyy_mm_dd))
         return True
+
+    # Format of foreign project
+    json_file_name = "{station_id}_{YYYY_MM_DD}.json".format(station_id=station, YYYY_MM_DD=yyyy_mm_dd)
+    json_file_path = os.path.join(station_directory, json_file_name)
+    if os.path.isfile(json_file_path) and os.path.getsize(json_file_path) and not force_overwrite:
+        logging.info("skip download for {station} at {yyyy_mm_dd}".format(station=station, yyyy_mm_dd=yyyy_mm_dd))
+        return True
+
     history_query = "history_{YYYYMMDD}/q/pws:{station_id}.json".format(YYYYMMDD=yyyymmdd, station_id=station)
     query_url = WundergroundProperties.get_api_url() + history_query
     response = requests.get(query_url)

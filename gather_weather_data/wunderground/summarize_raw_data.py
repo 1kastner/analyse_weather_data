@@ -89,13 +89,13 @@ def _get_data_for_single_day(station, day):
     json_file_name = _get_file_name(station, day, 'json')
     json_file_path = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station, json_file_name)
     if not os.path.isfile(json_file_path):
-        # keep this for backward compatibility
+        # search for files of other project
         json_file_name = station + "_" + day.strftime("%Y%m%d") + ".json"
         json_file_path = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station, json_file_name)
     if not os.path.isfile(json_file_path):
         logging.warning("missing input file: " + json_file_path)
         return
-    if not os.path.getsize(json_file_path):
+    if os.path.getsize(json_file_path) == 0:
         logging.warning("encountered an empty file: ", json_file_path)
         os.remove(json_file_path)
         return

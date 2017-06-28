@@ -1,8 +1,6 @@
 """
-Inspired by the paper 'Crowdsourcing air temperature from citizen weather stations for urban climate research' by Fred 
-Meier, Daniel Fenner, Tom Grassman, Marco Otto, Dieter Scherer (2017).
 
-I have no affiliation with any of the people or institutes but I did this as a personal project on my own.
+Run as script with '-m filter_weather_data.filters.remove_indoor_stations'
 """
 
 import os
@@ -13,7 +11,7 @@ import pandas
 import numpy
 
 from . import PROCESSED_DATA_DIR
-from . import load_station
+from . import StationRepository
 
 
 class Ellipse:
@@ -134,21 +132,22 @@ def get_reference_interval(start_date, end_date):
     return result
 
 
-def filter_stations(stations, start_date, end_date, time_zone):
+def filter_stations(station_dicts, start_date, end_date, time_zone):
     """
 
-    :param stations: The name of the stations, e.g. ['IHAMBURG69']
+    :param station_dicts: The station dicts
     :param start_date: The date to start (included) 
     :param end_date: The date to stop (included)
     :param time_zone: The time zone
     """
     reference_interval = get_reference_interval(start_date, end_date)
     filtered_stations = []
-    for station in stations:
-        station_df = load_station(station, start_date, end_date, time_zone=time_zone)
-        logging.debug(station)
-        if check_station(station_df, reference_interval):
-            filtered_stations.append(station)
+
+    for station_dict in station_dicts:
+        station_name = station_dict["name"]
+        logging.debug(station_name)
+        if check_station(station_dict["data_frame"], reference_interval):
+            filtered_stations.append(station_name)
     return filtered_stations
 
 
@@ -156,7 +155,11 @@ def demo():
     start_date = "2016-01-01T00:00:00+01:00"
     end_date = "2016-12-31T00:00:00+01:00"
     time_zone = "CET"
-    stations_inside_reference = filter_stations(['IHAMBURG69', 'IBNNINGS2'], start_date, end_date, time_zone)
+    stations = ['IHAMBURG69', 'IBNNINGS2']
+    station_repository = StationRepository()
+    station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone=time_zone) for station
+                     in stations]
+    stations_inside_reference = filter_stations(station_dicts, start_date, end_date, time_zone)
     print(stations_inside_reference)
 
 
