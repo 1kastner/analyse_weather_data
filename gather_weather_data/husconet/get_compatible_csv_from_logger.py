@@ -7,22 +7,9 @@ import logging
 
 import pandas
 
+from . import HUSCONET_STATIONS
 from . import HUSCONET_RAW_DATA_DIR
 from . import PROCESSED_DATA_DIR
-
-
-HUSCONET_STATIONS = [
-    "HCM",
-    "IHM",
-    "LGM",
-    "LWM",
-    "RIM",
-    "SGM",
-    "SWM",
-    "WGM",
-    "WWM",
-    "ZOM",
-]
 
 
 def load_husconet_station(station):
