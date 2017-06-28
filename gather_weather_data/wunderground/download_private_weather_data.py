@@ -82,34 +82,6 @@ def get_station_data_for_time_span(station, start_date, end_date, force_overwrit
     return success
 
 
-def check_sanity(station, start_date, end_date):
-    """
-    
-    :param station: The station to check
-    :param start_date: first date (included)
-    :param end_date: last date (included)
-    """
-    date_to_check = start_date
-    while date_to_check <= end_date:
-        yyyymmdd = date_to_check.strftime("%Y%m%d")
-        station_directory = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station)
-        json_file_name = "{station_id}_{YYYYMMDD}.json".format(station_id=station, YYYYMMDD=yyyymmdd)
-        json_file_path = os.path.join(station_directory, json_file_name)
-        if not os.path.isfile(json_file_path):
-            logging.warning("missing: {station} at {YYYYMMDD}".format(station=station, YYYYMMDD=yyyymmdd))
-            date_to_check = date_to_check + datetime.timedelta(days=1)
-            continue
-        with open(json_file_path) as f:
-            json_file_content = json.load(f)
-        if "response" in json_file_content and "error" in json_file_content["response"]:
-            error_description = json_file_content["response"]["error"]["description"]
-            logging.warning("error for {station} at {YYYYMMDD}: {error_description}".format(station=station,
-                            YYYYMMDD=yyyymmdd, error_description=error_description))
-            os.remove(json_file_path)
-
-        date_to_check = date_to_check + datetime.timedelta(days=1)
-
-
 def demo():
     """
     Downloads all data available for each station during the year 2016.

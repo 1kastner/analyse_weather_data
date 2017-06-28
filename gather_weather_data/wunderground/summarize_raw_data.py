@@ -17,26 +17,6 @@ from . import PROCESSED_DATA_DIR
 from . import get_all_stations
 
 
-class TimeZone(datetime.tzinfo):
-    """
-    A helper class to craft personal time zones.
-    """
-
-    def __init__(self, offset, is_daylight_saving_time, name):
-        self.offset = offset
-        self.isdst = is_daylight_saving_time
-        self.name = name
-
-    def utcoffset(self, dt):
-        return datetime.timedelta(hours=self.offset) + self.dst(dt)
-
-    def dst(self, dt):
-            return datetime.timedelta(hours=1) if self.isdst else datetime.timedelta(0)
-
-    def tzname(self, dt):
-        return self.name
-
-
 def _parse_utc_date(utc_date_json):
     """
     
@@ -97,12 +77,12 @@ def _get_header():
     return HEADER_FORMAT.replace("{", "").replace("}", "")
 
 
-def _get_data_for_single_day(station, day, time_zone):
+def _get_data_for_single_day(station, day):
     """
+    At the current time the day provided is interpreted as local time at wunderground.
     
     :param station: The name of the station, e.g. 'IHAMBURG69'
     :param day: The day to pick the json from
-    :param time_zone: The time zone to use for the 'datetime' column
     :return: A valid csv file content with header
     :rtype: str
     """
@@ -113,7 +93,7 @@ def _get_data_for_single_day(station, day, time_zone):
         json_file_name = station + "_" + day.strftime("%Y%m%d") + ".json"
         json_file_path = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station, json_file_name)
     if not os.path.isfile(json_file_path):
-        logging.warning("missing input file")
+        logging.warning("missing input file: " + json_file_path)
         return
     if not os.path.getsize(json_file_path):
         logging.warning("encountered an empty file: ", json_file_path)
@@ -131,7 +111,7 @@ def _get_data_for_single_day(station, day, time_zone):
     for raw_observation in raw_json_weather_data["history"]["observations"]:
         observation = {}
         utc_date = _parse_utc_date(raw_observation["utcdate"])
-        observation["datetime"] = utc_date.astimezone(time_zone).isoformat()
+        observation["datetime"] = utc_date.isoformat()
         observation["temperature"] = _cast_number(raw_observation["tempm"])
         observation["dewpoint"] = _cast_number(raw_observation["dewptm"])
         observation["windspeed"] = _cast_number(raw_observation["wspdm"], raw_observation["wspdi"])
@@ -148,13 +128,12 @@ def _get_data_for_single_day(station, day, time_zone):
     return "\n".join(observations)
 
 
-def _create_csv_from_json(station, day, time_zone, force_overwrite):
+def _create_csv_from_json(station, day, force_overwrite):
     """
     
     :param force_overwrite: Whether to overwrite old daily summary files.
     :param station: The name of the station, e.g. 'IHAMBURG69'
     :param day: The day to pick the json from
-    :param time_zone: The time zone to use for the 'datetime' column
     """
     processed_station_dir = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station)
     if not os.path.isdir(processed_station_dir):
@@ -164,35 +143,33 @@ def _create_csv_from_json(station, day, time_zone, force_overwrite):
         logging.info("skip " + csv_path)
         return
     with open(csv_path, "w") as f:
-        try:
-            csv_file_content = _get_data_for_single_day(station, day, time_zone)
-        except KeyError:
-            logging.info("json does not comply expected form, failed to create " + csv_path)
-            csv_file_content = _get_header()
-        f.write(csv_file_content)
+        csv_file_content = _get_data_for_single_day(station, day)
+        if csv_file_content is not None:
+            f.write(csv_file_content)
+        else:
+            f.write(_get_header())
 
 
-def create_daily_summaries_for_time_span(station, start_date, end_date, time_zone, force_overwrite):
+def create_daily_summaries_for_time_span(station, start_date, end_date, force_overwrite):
     """
     
     :param force_overwrite: Whether to overwrite old daily summary files.
     :param station: The name of the station, e.g. 'IHAMBURG69'
     :param start_date: The date to start (included) 
     :param end_date: The date to stop (included)
-    :param time_zone: The time zone to use for the 'datetime' column
     :return: 
     """
     date_to_check = start_date
     while date_to_check <= end_date:
-        _create_csv_from_json(station, date_to_check, time_zone, force_overwrite)
+        _create_csv_from_json(station, date_to_check, force_overwrite)
         date_to_check = date_to_check + datetime.timedelta(days=1)
 
 
 def _open_daily_summary(station, day):
     """
     
-    :param station: 
-    :param day: 
+    :param station: The name of the station, e.g. 'IHAMBURG69'
+    :param day: The day to get the summary for (can be naive)
     :return: The corresponding data frame
     """
     csv_file = os.path.join(WUNDERGROUND_RAW_DATA_DIR, station, _get_file_name(station, day, "csv"))
@@ -227,6 +204,7 @@ def join_daily_summaries(station, start_date, end_date, force_overwrite):
 
     # remove duplicates (happens if same entry exists for two days)
     data_frame.groupby(data_frame.index).first()
+    data_frame.sort_index(inplace=True)
 
     data_frame.to_csv(span_summary_path)
 
@@ -237,9 +215,8 @@ def demo():
         logging.info(station)
         start_date = datetime.datetime(2016, 1, 1)
         end_date = datetime.datetime(2016, 12, 31)
-        german_winter_time = TimeZone(1, False, "German Winter Time")
         logging.info("create daily summaries")
-        create_daily_summaries_for_time_span(station, start_date, end_date, german_winter_time, False)
+        create_daily_summaries_for_time_span(station, start_date, end_date, False)
         logging.info("create time span summary")
         join_daily_summaries(station, start_date, end_date, True)
 
