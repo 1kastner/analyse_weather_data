@@ -3,14 +3,12 @@
 Run as script with '-m filter_weather_data.filters.remove_indoor_stations'
 """
 
-import os
 import logging
 import statistics
 
-import pandas
 import numpy
 
-from . import PROCESSED_DATA_DIR
+from . import load_average_reference_values
 from . import StationRepository
 
 
@@ -89,15 +87,15 @@ def check_station(station_df, reference_interval):
     return True
 
 
-def get_reference_interval(start_date, end_date):
+def get_reference_interval(start_date, end_date, time_zone):
     """
     
     :param start_date: The first value to load (included)
     :param end_date: The last value to load (included)
+    :param time_zone: The time zone, e.g. 'CET'
     :return: This creates the norm whether the provided minimum temperature and daily deviation can be considered usual
     """
-    reference_csv_path = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average.csv")
-    reference_df = pandas.read_csv(reference_csv_path, index_col="datetime", parse_dates=["datetime"])
+    reference_df = load_average_reference_values("temperature", time_zone)
     reference_df = reference_df[start_date:end_date]
     result = {}
 
@@ -140,7 +138,7 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
     :param end_date: The date to stop (included)
     :param time_zone: The time zone
     """
-    reference_interval = get_reference_interval(start_date, end_date)
+    reference_interval = get_reference_interval(start_date, end_date, time_zone)
     filtered_stations = []
 
     for station_dict in station_dicts:

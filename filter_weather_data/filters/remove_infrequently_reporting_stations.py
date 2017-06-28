@@ -38,13 +38,10 @@ def check_station(station_df):
     return True
 
 
-def filter_stations(station_dicts, start_date, end_date):
+def filter_stations(station_dicts):
     """
 
     :param station_dicts: The station dicts
-    :param start_date: The date to start (included) 
-    :param end_date: The date to stop (included)
-
     """
     filtered_stations = []
     for station_dict in station_dicts:
@@ -63,7 +60,7 @@ def demo():
     station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
                                                                                      time_zone, minutely=True)
                                                      for station in stations])
-    stations_with_data = filter_stations(station_dicts, start_date, end_date)
+    stations_with_data = filter_stations(station_dicts)
     print([station_dict["name"] for station_dict in stations_with_data])
 
 
