@@ -30,7 +30,7 @@ def get_all_stations():
     return stations_df
 
 
-def load_station(station, start_date, end_date):
+def load_station(station, start_date, end_date, time_zone=None):
     """
     This only looks at the dates and returns the corresponding summary (assuming naive dates, overlapping at midnight
     is ignored).
@@ -40,6 +40,8 @@ def load_station(station, start_date, end_date):
     :type start_date: str | datetime.datetime
     :param end_date: The latest day which must be included (potentially later)
     :type end_date: str | datetime.datetime
+    :param time_zone: The time zone, e.g. 'CET'
+    :type time_zone: datetime.tzinfo | str
     :return: The searched data frame
     :rtype: ``pandas.DataFrame``
     """
@@ -67,4 +69,8 @@ def load_station(station, start_date, end_date):
         return None
     else:
         csv_file = os.path.join(input_dir, searched_station_summary_file_name)
-        return pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+        station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+        if time_zone is not None:
+            station_df = station_df.tz_localize("UTC").tz_convert(time_zone)
+        station_df = station_df[start_date:end_date]
+        return station_df

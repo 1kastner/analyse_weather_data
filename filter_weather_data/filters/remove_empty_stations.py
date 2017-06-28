@@ -18,15 +18,7 @@ def check_station(station_df, start_date, end_date):
     :param start_date: The date to start (included), naive date interpreted as UTC  
     :param end_date: The date to stop (included), naive date interpreted as UTC
     """
-    if type(start_date) is str:
-        start_date = dateutil.parser.parse(start_date)
-    if type(end_date) is str:
-        end_date = dateutil.parser.parse(end_date)
-    station_df = station_df[start_date:end_date]
-    if station_df.empty or station_df.temperature.count() == 0:
-        return False
-    else:
-        return True
+    return station_df.empty or station_df.temperature.count() == 0
 
 
 def filter_stations(stations, start_date, end_date):

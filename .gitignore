@@ -102,3 +102,4 @@ ENV/
 wunderground_raw_data/
 processed_data/
 private/
+husconet_raw_data/
