@@ -142,10 +142,9 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
     filtered_stations = []
 
     for station_dict in station_dicts:
-        station_name = station_dict["name"]
-        logging.debug(station_name)
+        logging.debug("indoor " + station_dict["name"])
         if check_station(station_dict["data_frame"], reference_interval):
-            filtered_stations.append(station_name)
+            filtered_stations.append(station_dict)
     return filtered_stations
 
 
@@ -158,7 +157,7 @@ def demo():
     station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone=time_zone) for station
                      in stations]
     stations_inside_reference = filter_stations(station_dicts, start_date, end_date, time_zone)
-    print(stations_inside_reference)
+    print([station_dict["name"] for station_dict in stations_inside_reference])
 
 
 if __name__ == "__main__":

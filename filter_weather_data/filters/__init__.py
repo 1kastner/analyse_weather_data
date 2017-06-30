@@ -28,23 +28,51 @@ class StationRepository:
 
     stations_df = None
 
-    @classmethod
-    def get_all_stations(cls):
+    def __init__(self, private_weather_stations_file_name="private_weather_stations.csv"):
+        """
+        
+        :param private_weather_stations_file_name: Where to look up the station metadata
+        """
+        self.private_weather_stations_file_name = private_weather_stations_file_name
+
+    def get_all_stations(self):
         """
     
         :return: All stations which have been detected before
         """
-        if cls.stations_df is None:
-            csv_file = os.path.join(PROCESSED_DATA_DIR, "private_weather_stations.csv")
+        if self.stations_df is None:
+            csv_file = os.path.join(PROCESSED_DATA_DIR, self.private_weather_stations_file_name)
             if not os.path.isfile(csv_file):
+                logging.warning("No such file: ", os.path.realpath(csv_file))
                 raise RuntimeError("No private weather station list found. Run 'list_private_weather_stations.py'")
-            cls.stations_df = pandas.read_csv(csv_file, index_col="station")
-        return cls.stations_df
+            self.stations_df = pandas.read_csv(csv_file, index_col="station")
+        return self.stations_df
+
+    def load_all_stations(self, start_date, end_date, time_zone, minutely):
+        """
+        
+        :param start_date: The earliest day which must be included (potentially earlier)
+        :type start_date: str | datetime.datetime
+        :param end_date: The latest day which must be included (potentially later)
+        :type end_date: str | datetime.datetime
+        :param time_zone: The time zone, e.g. 'CET'
+        :type time_zone: datetime.tzinfo | str
+        :param minutely: Resample data frame minutely
+        :type minutely: bool
+        :return: 
+        """
+        station_dicts = []
+        for station_name, lat, lon in self.get_all_stations().itertuples():
+            station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
+            if station_dict is not None:
+                station_dicts.append(station_dict)
+                logging.debug("load " + station_name)
+        return station_dicts
 
     def load_station(self, station, start_date, end_date, time_zone=None, minutely=False):
         """
-        This only looks at the dates and returns the corresponding summary (assuming naive dates, overlapping at midnight
-        is ignored).
+        This only looks at the dates and returns the corresponding summary (assuming naive dates, overlapping at 
+        midnight is ignored).
         
         :param station: The station to load
         :param start_date: The earliest day which must be included (potentially earlier)
@@ -120,17 +148,14 @@ class StationRepository:
     def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
         time_span_df = pandas.DataFrame(index=pandas.date_range(start_date, end_date, req='T', name="datetime",
                                                                 time_zone=time_zone))
-        time_span_df = time_span_df.tz_localize("UTC").tz_convert(time_zone)
         station_df = station_df.join([time_span_df], how="outer")
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
         return station_df
 
-    @classmethod
-    def _get_metadata(cls, station):
-        if cls.stations_df is None:
-            cls.get_all_stations()
-        return cls.stations_df.loc[station]
-
+    def _get_metadata(self, station):
+        if self.stations_df is None:
+            self.get_all_stations()
+        return self.stations_df.loc[station]
 
 
 def load_average_reference_values(attribute, time_zone):

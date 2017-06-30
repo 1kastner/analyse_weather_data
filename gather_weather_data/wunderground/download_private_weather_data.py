@@ -49,6 +49,7 @@ def get_data_for_day(station, day, force_overwrite):
     history_query = "history_{YYYYMMDD}/q/pws:{station_id}.json".format(YYYYMMDD=yyyymmdd, station_id=station)
     query_url = WundergroundProperties.get_api_url() + history_query
     response = requests.get(query_url)
+    time.sleep(0.5)
     if response.status_code != 200:
         time.sleep(0.5)
         response = requests.get(query_url)

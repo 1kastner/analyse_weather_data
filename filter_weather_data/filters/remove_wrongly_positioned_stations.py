@@ -1,6 +1,8 @@
 """
 
-Run with '-m filter_weather_data.filters.remove_wrongly_positioned_stations' if you want to see the demo.
+Run with 
+-m filter_weather_data.filters.remove_wrongly_positioned_stations
+if you want to see the demo.
 """
 
 import logging
@@ -41,15 +43,13 @@ def filter_stations(station_dicts):
 
     filtered_stations = []
     for station_dict in station_dicts:
+        logging.debug("position " + station_dict["name"])
         if station_dict["name"] in meta_info_df.index and check_station(station_dict, meta_info_df):
             filtered_stations.append(station_dict)
     return filtered_stations
 
 
 def demo():
-    # Initialise data
-    StationRepository().get_all_stations()
-
     stations = ['IHAMBURG69', 'IBNNINGS2']
     station_dicts = [{"name": station} for station in stations]
     stations_at_good_position = filter_stations(station_dicts)

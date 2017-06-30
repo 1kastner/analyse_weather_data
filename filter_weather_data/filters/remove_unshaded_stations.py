@@ -3,14 +3,12 @@
 Run with '-m filter_weather_data.filters.remove_unshaded_stations' if you want to see the demo.
 """
 
-import os
 import logging
 
 import pandas
 import scipy.stats
 
 from . import StationRepository
-from . import PROCESSED_DATA_DIR
 from . import load_average_reference_values
 
 
@@ -77,7 +75,7 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
 
     filtered_stations = []
     for station_dict in station_dicts:
-        logging.debug(station_dict["name"])
+        logging.debug("unshaded " + station_dict["name"])
         if check_station(station_dict["data_frame"], reference_temperature_df, reference_radiation_df):
             filtered_stations.append(station_dict)
     return filtered_stations

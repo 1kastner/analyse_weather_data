@@ -11,8 +11,20 @@ from gather_weather_data.husconet import HUSCONET_STATIONS
 from gather_weather_data.husconet import PROCESSED_DATA_DIR
 
 
-def average_temperature_across_husconet_stations():
+def average_temperature_across_husconet_stations(force_overwrite=False):
+    """
+    Average (statistic mean) all stations of husconet
+    
+    :param force_overwrite: Force to create new file
+    """
+
     working_dir = os.path.join(PROCESSED_DATA_DIR, "husconet")
+    if not os.path.isdir(working_dir):
+        os.mkdir(working_dir)
+    csv_output = os.path.join(working_dir, "husconet_average_temperature.csv")
+    if os.path.isfile(csv_output) and not force_overwrite:
+        return
+
     df = pandas.DataFrame()
     for station in HUSCONET_STATIONS:
         logging.debug(station)
@@ -21,7 +33,6 @@ def average_temperature_across_husconet_stations():
                                      parse_dates=["datetime"])
         df = df.join(station_df, how="outer", rsuffix="_" + station)
     df = df.mean(axis=1).rename("temperature")
-    csv_output = os.path.join(working_dir, "husconet_average_temperature.csv")
     df.to_csv(csv_output, header=True)
 
 

@@ -1,6 +1,7 @@
 """
 
 Checks if enough data is provided during the given period.
+The check removes entries when the reports were too infrequent.
 """
 
 import logging
@@ -15,6 +16,8 @@ def check_station(station_df):
     """
     Be aware that start and end date are not time zone sensitive when provided as a string, see
     https://github.com/pandas-dev/pandas/issues/16785
+    
+    This function modifies the handed in station_df
 
     :param station_df: The station data frame (pandas)
     :return: Does station provide enough reports for analysis
@@ -45,7 +48,7 @@ def filter_stations(station_dicts):
     """
     filtered_stations = []
     for station_dict in station_dicts:
-        logging.debug(station_dict["name"])
+        logging.debug("infrequent " + station_dict["name"])
         if check_station(station_dict["data_frame"]):
             filtered_stations.append(station_dict)
     return filtered_stations
@@ -60,8 +63,8 @@ def demo():
     station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
                                                                                      time_zone, minutely=True)
                                                      for station in stations])
-    stations_with_data = filter_stations(station_dicts)
-    print([station_dict["name"] for station_dict in stations_with_data])
+    stations_with_frequent_reports = filter_stations(station_dicts)
+    print([station_dict["name"] for station_dict in stations_with_frequent_reports])
 
 
 if __name__ == "__main__":
