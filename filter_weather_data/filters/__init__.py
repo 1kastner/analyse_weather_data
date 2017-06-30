@@ -139,7 +139,7 @@ class StationRepository:
     @staticmethod
     def _handle_time_zone_related_issues(station_df, time_zone, start_date, end_date):
         if time_zone is not None:
-            station_df = station_df.tz_localize("UTC").tz_convert(time_zone)
+            station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
         if not station_df.index.is_monotonic:  # Some JSON are damaged, so we need to sort them again
             station_df.sort_index(inplace=True)
         return station_df[start_date:end_date]
@@ -147,7 +147,8 @@ class StationRepository:
     @staticmethod
     def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
         time_span_df = pandas.DataFrame(index=pandas.date_range(start_date, end_date, req='T', name="datetime",
-                                                                time_zone=time_zone))
+                                                                time_zone=time_zone)
+                                        ).tz_localize(None)
         station_df = station_df.join([time_span_df], how="outer")
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
         return station_df
@@ -168,5 +169,5 @@ def load_average_reference_values(attribute, time_zone):
     reference_csv_path = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average_{attribute}.csv".format(
         attribute=attribute))
     reference_df = pandas.read_csv(reference_csv_path, index_col="datetime", parse_dates=["datetime"])
-    reference_df = reference_df.tz_localize("UTC").tz_convert(time_zone)
+    reference_df = reference_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
     return reference_df

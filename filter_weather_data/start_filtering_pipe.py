@@ -38,13 +38,14 @@ def save_station_dicts_as_metadata_csv(station_dicts, csv_path):
     :param csv_path: The file name
     """
 
-    df = pandas.DataFrame(columns=["station", "lat", "lon"])
+    df = pandas.DataFrame(columns=["station", "lat", "lon"], index=["station"])
     for station_dict in station_dicts:
         station_name = station_dict["name"]
         lat = station_dict["meta_data"]["position"]["lat"]
         lon = station_dict["meta_data"]["position"]["lon"]
-        df.loc[station_name] = (lat, lon)
-        df.to_csv(csv_path)
+        pandas.concat([df, pandas.DataFrame(columns=["station", "lat", "lon"], index=["station"],
+                                            data={"station": station_name, "lat": lat, "lon": lon})])
+    df.to_csv(csv_path)
 
 
 def save_station_dicts_as_time_span_summary(station_dicts):
@@ -70,9 +71,16 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     station_repository = StationRepository(private_weather_stations_file_name)
     station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
 
+    output_dir = os.path.join(
+        PROCESSED_DATA_DIR,
+        "filtered_stations"
+    )
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
     # POSITION
     csv_path_with_valid_position = os.path.join(
-        PROCESSED_DATA_DIR,
+        output_dir,
         "station_dicts_with_valid_position"
     )
     if not os.path.isfile(csv_path_with_valid_position) or force_overwrite:
@@ -80,10 +88,11 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         save_station_dicts_as_metadata_csv(with_position_station_dicts, csv_path_with_valid_position)
     else:
         with_position_station_dicts = station_dicts
+    logging.debug("valid position " + str([station_dict["name"] for station_dict in with_position_station_dicts]))
 
     # EMPTY
     csv_path_not_empty = os.path.join(
-        PROCESSED_DATA_DIR,
+        output_dir,
         "station_dicts_not_empty"
     )
     if not os.path.isfile(csv_path_not_empty) or force_overwrite:
@@ -91,10 +100,11 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         save_station_dicts_as_metadata_csv(not_empty_station_dicts, csv_path_not_empty)
     else:
         not_empty_station_dicts = with_position_station_dicts
+    logging.debug("some data " + str([station_dict["name"] for station_dict in not_empty_station_dicts]))
 
     # INFREQUENT
     csv_path_not_infrequent = os.path.join(
-        PROCESSED_DATA_DIR,
+        output_dir,
         "station_dicts_not_infrequent"
     )
     if not os.path.isfile(csv_path_not_infrequent) or force_overwrite:
@@ -102,10 +112,11 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         save_station_dicts_as_metadata_csv(not_infrequent_station_dicts, csv_path_not_infrequent)
     else:
         not_infrequent_station_dicts = not_empty_station_dicts
+    logging.debug("frequent " + str([station_dict["name"] for station_dict in not_infrequent_station_dicts]))
 
     # INDOOR
     csv_path_not_indoor = os.path.join(
-        PROCESSED_DATA_DIR,
+        output_dir,
         "station_dicts_not_indoor"
     )
     if not os.path.isfile(csv_path_not_indoor) or force_overwrite:
@@ -113,17 +124,20 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         save_station_dicts_as_metadata_csv(not_indoor_station_dicts, csv_path_not_indoor)
     else:
         not_indoor_station_dicts = not_infrequent_station_dicts
+    logging.debug("outdoor " + str([station_dict["name"] for station_dict in not_indoor_station_dicts]))
 
     # UNSHADED
     csv_path_not_unshaded = os.path.join(
-        PROCESSED_DATA_DIR,
+        output_dir,
         "station_dicts_not_unshaded"
     )
     if not os.path.isfile(csv_path_not_unshaded) or force_overwrite:
-        not_unshaded_station_dicts = filter_unshaded_stations(not_infrequent_station_dicts, start_date, end_date, time_zone)
+        not_unshaded_station_dicts = filter_unshaded_stations(not_infrequent_station_dicts, start_date, end_date,
+                                                              time_zone)
         save_station_dicts_as_metadata_csv(not_unshaded_station_dicts, csv_path_not_unshaded)
     else:
         not_unshaded_station_dicts = not_indoor_station_dicts
+    logging.debug("shaded " + str([station_dict["name"] for station_dict in not_unshaded_station_dicts]))
 
     # save for future processing
     save_station_dicts_as_time_span_summary(not_unshaded_station_dicts)
@@ -134,7 +148,7 @@ def demo():
     end_date = "2016-12-31T00:00:00+01:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
     time_zone = "CET"
-    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, False)
+    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True)
 
 
 if __name__ == "__main__":
