@@ -37,15 +37,14 @@ def save_station_dicts_as_metadata_csv(station_dicts, csv_path):
     :param station_dicts: The station dicts
     :param csv_path: The file name
     """
-
-    df = pandas.DataFrame(columns=["station", "lat", "lon"], index=["station"])
-    for station_dict in station_dicts:
-        station_name = station_dict["name"]
-        lat = station_dict["meta_data"]["position"]["lat"]
-        lon = station_dict["meta_data"]["position"]["lon"]
-        pandas.concat([df, pandas.DataFrame(columns=["station", "lat", "lon"], index=["station"],
-                                            data={"station": station_name, "lat": lat, "lon": lon})])
-    df.to_csv(csv_path)
+    eol = "\n"
+    with open(csv_path, "w") as f:
+        f.write("station,lat,lon" + eol)
+        for station_dict in station_dicts:
+            station_name = station_dict["name"]
+            lat = str(station_dict["meta_data"]["position"]["lat"])
+            lon = str(station_dict["meta_data"]["position"]["lon"])
+            f.write(station_name + "," + lat + "," + lon + eol)
 
 
 def save_station_dicts_as_time_span_summary(station_dicts):
@@ -96,7 +95,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         "station_dicts_not_empty"
     )
     if not os.path.isfile(csv_path_not_empty) or force_overwrite:
-        not_empty_station_dicts = filter_empty_stations(station_dicts)
+        not_empty_station_dicts = filter_empty_stations(with_position_station_dicts)
         save_station_dicts_as_metadata_csv(not_empty_station_dicts, csv_path_not_empty)
     else:
         not_empty_station_dicts = with_position_station_dicts
@@ -132,7 +131,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
         "station_dicts_not_unshaded"
     )
     if not os.path.isfile(csv_path_not_unshaded) or force_overwrite:
-        not_unshaded_station_dicts = filter_unshaded_stations(not_infrequent_station_dicts, start_date, end_date,
+        not_unshaded_station_dicts = filter_unshaded_stations(not_indoor_station_dicts, start_date, end_date,
                                                               time_zone)
         save_station_dicts_as_metadata_csv(not_unshaded_station_dicts, csv_path_not_unshaded)
     else:

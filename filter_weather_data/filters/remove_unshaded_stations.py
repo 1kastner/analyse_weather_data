@@ -31,11 +31,12 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
     :return: Is the station at a shaded place with high probability?
     """
 
-    temp_df = station_df.join(reference_temperature_df, how='outer', rsuffix="_reference_temperature")
+    temp_df = station_df.join(reference_temperature_df, how='inner', rsuffix="_reference_temperature")
     delta_temperature = (temp_df.temperature_reference_temperature - temp_df.temperature).rename("temperature_delta")
     delta_df = pandas.concat([temp_df, delta_temperature], axis=1)
 
     delta_df = delta_df.join(reference_radiation_df, how='left')
+    delta_df.info()
     df_only_sunshine = delta_df[(delta_df.radiation > SUNSHINE_MINIMUM_THRESHOLD)]
     df_only_sunshine = df_only_sunshine.dropna(axis=0, how='any')
 
