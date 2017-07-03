@@ -54,7 +54,7 @@ def demo():
     stations = ['IHAMBURG69', 'IBNNINGS2']
     station_dicts = [{"name": station} for station in stations]
     stations_at_good_position = filter_stations(station_dicts, meta_info_df)
-    print([station_dict["name"] for station_dict in stations_at_good_position])
+    logging.info([station_dict["name"] for station_dict in stations_at_good_position])
 
 
 if __name__ == "__main__":

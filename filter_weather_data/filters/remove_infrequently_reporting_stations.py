@@ -28,7 +28,8 @@ def check_station(station_dict):
     for year in station_df.index.year.unique():
         year_key = str(year)
         year_df = station_df.loc[year_key:year_key]  # avoids getting a series if a single entry exists
-        if isinstance(year_df, pandas.DataFrame) and year_df.temperature.count() == 0:
+        if year_df.temperature.count() == 0:
+            logging.debug(station_name + " is an empty data frame")
             return False
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)

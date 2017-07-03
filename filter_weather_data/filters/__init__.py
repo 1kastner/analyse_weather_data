@@ -41,7 +41,7 @@ class StationRepository:
             self.summary_dir = summary_dir
         self.cached_os_list_dir = os.listdir(self.summary_dir)
 
-    def get_all_stations(self):
+    def get_all_stations(self, limit=0):
         """
     
         :return: All stations which have been detected before
@@ -51,8 +51,13 @@ class StationRepository:
             if not os.path.isfile(csv_file):
                 logging.warning("No such file: ", os.path.realpath(csv_file))
                 raise RuntimeError("No private weather station list found. Run 'list_private_weather_stations.py'")
+            else:
+                logging.debug("loading " + csv_file)
             self.stations_df = pandas.read_csv(csv_file, index_col="station")
-        return self.stations_df
+        if limit:
+            return self.stations_df.iloc[:limit]
+        else:
+            return self.stations_df
 
     def load_all_stations(self, start_date, end_date, time_zone, minutely, limit=0):
         """
@@ -69,6 +74,7 @@ class StationRepository:
         :return: 
         """
         station_dicts = []
+        logging.debug("using summary dir: " + self.summary_dir)
         if limit:
             k = 0
         for station_name, lat, lon in self.get_all_stations().itertuples():
@@ -112,7 +118,6 @@ class StationRepository:
             return None
         else:
             csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
-            logging.debug("loading " + station + " with file " + csv_file)
             station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' at all".format(station=station))

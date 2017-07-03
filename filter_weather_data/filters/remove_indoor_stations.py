@@ -72,30 +72,34 @@ def check_station(station_df, reference_interval):
         daily_standard_deviation_per_month = []
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
-            logging.debug(month_key)
-            month_df = station_df.loc[month_key]
+            month_df = year_df.loc[month_key]
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = station_df.loc[day_key]
                 t_min = day_df.temperature.min()
-                if not numpy.isnan(t_min):
+                if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
                     minimum_temperatures_per_month.append(t_min)
-                t_std = day_df.temperature.std()
-                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
-                    daily_standard_deviation_per_month.append(t_std)
                 t_std = day_df.temperature.std()
                 if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
                     daily_standard_deviation_per_month.append(t_std)
 
             if len(minimum_temperatures_per_month) == 0:
+                logging.debug(month_key)
                 logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+                station_df.info()
+                return False
             if len(daily_standard_deviation_per_month) == 0:
+                logging.debug(month_key)
                 logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+                station_df.info()
+                return False
 
             minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
             temperature_standard_deviation = statistics.mean(daily_standard_deviation_per_month)
             if (minimum_temperature_mean, temperature_standard_deviation) not in reference_interval[month_key]:
+                logging.debug(month_key)
                 return False
+    station_df.dropna(axis=0, subset=["temperature"], how='any', inplace=True)
     return True
 
 

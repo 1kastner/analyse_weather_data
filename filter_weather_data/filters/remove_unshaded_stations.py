@@ -36,7 +36,6 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
     delta_df = pandas.concat([temp_df, delta_temperature], axis=1)
 
     delta_df = delta_df.join(reference_radiation_df, how='left')
-    delta_df.info()
     df_only_sunshine = delta_df[(delta_df.radiation > SUNSHINE_MINIMUM_THRESHOLD)]
     df_only_sunshine = df_only_sunshine.dropna(axis=0, how='any')
 
@@ -55,6 +54,9 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
 
     # Is the station at an unshaded position?
     station_unshaded = (r_value > CORRELATION_COEFFICIENT and p_value < P_VALUE)
+
+    if station_unshaded:
+        logging.debug("station unshaded")
 
     return not station_unshaded
 

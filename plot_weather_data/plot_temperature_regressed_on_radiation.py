@@ -3,11 +3,13 @@ Depends on
   filter_weather_data.filters.preparation.average_husconet_temperature
   filter_weather_data.filters.preparation.average_husconet_radiation
 """
+import os
 
 import numpy
 import pandas
 from matplotlib import pyplot
 
+from filter_weather_data.filters import PROCESSED_DATA_DIR
 from filter_weather_data.filters import StationRepository
 from filter_weather_data.filters import load_average_reference_values
 from filter_weather_data.filters.remove_unshaded_stations import SUNSHINE_MINIMUM_THRESHOLD
@@ -22,7 +24,16 @@ def plot_station(station, start_date, end_date, time_zone):
     :param end_date: The end date of the plot
     :param time_zone: The time zone of the reference net
     """
-    station_repository = StationRepository()
+    summary_dir = os.path.join(
+        PROCESSED_DATA_DIR,
+        "filtered_station_summaries_of_infrequent_stations"
+    )
+    outdoor_stations = os.path.join(
+        PROCESSED_DATA_DIR,
+        "filtered_stations",
+        "station_dicts_not_indoor.csv"
+    )
+    station_repository = StationRepository(outdoor_stations, summary_dir)
     station_dict = station_repository.load_station(station, start_date, end_date, time_zone, minutely=True)
     station_df = station_dict["data_frame"]
 

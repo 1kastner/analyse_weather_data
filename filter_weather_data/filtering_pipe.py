@@ -89,6 +89,24 @@ class FilterApplier:
         self.end_date = end_date
         self.time_zone = time_zone
 
+    def apply_extreme_record_filter(self, station_dicts, minimum, maximum):
+        """
+        Remove extreme values.
+
+        :param minimum: Filter out anything below this minimum
+        :param maximum: Filter out anything above this maximum
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        filter_extreme_values(station_dicts, minimum, maximum)
+        if self.force_overwrite:
+            output_dir_for_summaries = os.path.join(
+                PROCESSED_DATA_DIR,
+                "filtered_station_summaries_no_extreme_values"
+            )
+            save_station_dicts_as_time_span_summary(station_dicts, output_dir_for_summaries)
+        return station_dicts
+
     def apply_invalid_position_filter(self, station_dicts, meta_info_df):
         """
         Filters out stations which have invalid positions
@@ -97,25 +115,14 @@ class FilterApplier:
         :param meta_info_df: The meta info.
         :return: Good stations
         """
+        with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts, meta_info_df)
         csv_path_with_valid_position = os.path.join(
             self.output_dir,
             "station_dicts_with_valid_position.csv"
         )
-        with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts, meta_info_df)
         if not os.path.isfile(csv_path_with_valid_position) or self.force_overwrite:
             save_station_dicts_as_metadata_csv(with_valid_position_station_dicts, csv_path_with_valid_position)
         return with_valid_position_station_dicts
-
-    @staticmethod
-    def apply_extreme_record_filter(station_dicts, minimum, maximum):
-        """
-        Remove extreme values.
-        
-        :param station_dicts: The station dicts
-        :return: Good stations
-        """
-        filter_extreme_values(station_dicts, minimum, maximum)
-        return station_dicts
 
     def apply_infrequent_record_filter(self, station_dicts):
         """
@@ -124,13 +131,19 @@ class FilterApplier:
         :param station_dicts: The station dicts
         :return: Good stations
         """
-        csv_path_not_infrequent = os.path.join(
+        csv_path_frequent = os.path.join(
             self.output_dir,
             "station_dicts_frequent.csv"
         )
         frequent_station_dicts = filter_infrequently_reporting_stations(station_dicts)
-        if not os.path.isfile(csv_path_not_infrequent) or self.force_overwrite:
-            save_station_dicts_as_metadata_csv(frequent_station_dicts, csv_path_not_infrequent)
+        if not os.path.isfile(csv_path_frequent) or self.force_overwrite:
+            save_station_dicts_as_metadata_csv(frequent_station_dicts, csv_path_frequent)
+        if self.force_overwrite:
+            output_dir_for_summaries = os.path.join(
+                PROCESSED_DATA_DIR,
+                "filtered_station_summaries_frequent"
+            )
+            save_station_dicts_as_time_span_summary(station_dicts, output_dir_for_summaries)
         return frequent_station_dicts
 
     def apply_not_indoor_filter(self, station_dicts):
@@ -142,12 +155,12 @@ class FilterApplier:
         """
         csv_path_not_indoor = os.path.join(
             self.output_dir,
-            "station_dicts_not_indoor.csv"
+            "station_dicts_outdoor.csv"
         )
-        indoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
+        outdoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
         if not os.path.isfile(csv_path_not_indoor) or self.force_overwrite:
-            save_station_dicts_as_metadata_csv(indoor_station_dicts, csv_path_not_indoor)
-        return indoor_station_dicts
+            save_station_dicts_as_metadata_csv(outdoor_station_dicts, csv_path_not_indoor)
+        return outdoor_station_dicts
 
     def apply_unshaded_filter(self, station_dicts):
         """
@@ -160,17 +173,14 @@ class FilterApplier:
             self.output_dir,
             "station_dicts_not_unshaded.csv"
         )
+        shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
         if not os.path.isfile(csv_path_not_unshaded) or self.force_overwrite:
-            shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date,
-                                                                  self.time_zone)
             save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_not_unshaded)
-        else:
-            shaded_station_dicts = station_dicts
         return shaded_station_dicts
 
 
 def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False,
-             minimum=-100, maximum=+100):
+             minimum=-100.0, maximum=+100.0):
 
     output_dir = os.path.join(
         PROCESSED_DATA_DIR,
@@ -187,7 +197,10 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     logging.debug("start: " + str(len(all_found_station_dicts)))
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
+
+    # EXTREME
     filter_applier.apply_extreme_record_filter(all_found_station_dicts, minimum, maximum)
+    show_mini_statistics(all_found_station_dicts, all_found_station_dicts)
 
     # POSITION
     with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(all_found_station_dicts,
@@ -210,8 +223,16 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     logging.debug("indoor - shaded")
     show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
 
-    # save for future processing
-    save_station_dicts_as_time_span_summary(shaded_station_dicts)
+    # Done, just show again the stats
+    logging.debug("################# Stats")
+    logging.debug("start - position")
+    show_mini_statistics(all_found_station_dicts, with_valid_position_station_dicts)
+    logging.debug("position - infrequent")
+    show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
+    logging.debug("infrequent - indoor")
+    show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
+    logging.debug("indoor - shaded")
+    show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
 
 
 def demo():
@@ -219,7 +240,10 @@ def demo():
     end_date = "2016-12-31T00:00:00+01:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
     time_zone = "CET"
-    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True, -50, 50)
+    hamburg_minimum = -29.1 - 20  # -29.1°C is the record, 20 degrees additionally for free
+    hamburg_maximum = 37.3 + 40  # 37.3°C is the record, 40 degrees additionally for free (don't remove direct sunlight)
+    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True, hamburg_minimum,
+             hamburg_maximum)
 
 
 if __name__ == "__main__":
