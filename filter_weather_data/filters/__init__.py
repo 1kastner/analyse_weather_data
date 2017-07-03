@@ -68,11 +68,7 @@ class StationRepository:
         :return: 
         """
         station_dicts = []
-        i = 0
         for station_name, lat, lon in self.get_all_stations().itertuples():
-            i += 1
-            if i > 1000:
-                break
             station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
             if station_dict is not None:
                 station_dicts.append(station_dict)

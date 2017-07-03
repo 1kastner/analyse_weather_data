@@ -186,7 +186,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
 
     # INDOOR
-    indoor_station_dicts = filter_applier.apply_infrequent_record_filter(frequent_station_dicts)
+    indoor_station_dicts = filter_applier.apply_not_indoor_filter(frequent_station_dicts)
     logging.debug("infrequent - indoor")
     show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
 

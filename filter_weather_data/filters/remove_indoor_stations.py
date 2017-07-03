@@ -13,12 +13,12 @@ from . import StationRepository
 
 
 class Ellipse:
-    def __init__(self, center_x, center_y, radius_x_axis, radius_y_axis):
+    def __init__(self, center_x, radius_x_axis, center_y, radius_y_axis):
         """
         
         :param center_x: center of ellipse on x axis
-        :param center_y: center of ellipse on y axis
         :param radius_x_axis: radius of ellipse on x axis
+        :param center_y: center of ellipse on y axis
         :param radius_y_axis: radius of ellipse on y axis
         """
         self.center_x = center_x
@@ -113,7 +113,9 @@ def get_reference_interval(start_date, end_date, time_zone):
                 t_min = day_df.temperature.min()
                 if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
                     minimum_temperatures_per_month.append(t_min)
-                daily_standard_deviation.append(day_df.temperature.std())
+                t_std = day_df.temperature.std()
+                if not numpy.isnan(t_std):
+                    daily_standard_deviation.append(t_std)
 
             minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
             minimum_temperature_std = statistics.stdev(minimum_temperatures_per_month)
