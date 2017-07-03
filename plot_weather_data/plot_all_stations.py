@@ -24,7 +24,10 @@ def plot_station(start_date, end_date, time_zone):
     :param start_date: The start date of the plot
     :param end_date: The end date of the plot
     """
-    station_repository = StationRepository()
+    not_empty_weather_stations = os.path.join(PROCESSED_DATA_DIR, "filtered_stations",
+                                              "station_dicts_with_valid_position")
+    summary_dir = os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_not_extreme")
+    station_repository = StationRepository(not_empty_weather_stations, summary_dir)
     for station_dict in station_repository.load_all_stations(start_date, end_date, time_zone=time_zone, minutely=True):
         station_df = station_dict['data_frame']
         station_df.temperature.plot(kind='line', color='gray', alpha=.2)

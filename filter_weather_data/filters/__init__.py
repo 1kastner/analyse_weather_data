@@ -83,6 +83,7 @@ class StationRepository:
             else:
                 self.stations_df.lat.loc[station_name] = numpy.nan
         self.stations_df = self.stations_df[self.stations_df.lat.notnull()]
+        logging.debug("loaded station_dicts: " + str(len(station_dicts)))
         return station_dicts
 
     def load_station(self, station, start_date, end_date, time_zone=None, minutely=False):
@@ -177,10 +178,9 @@ class StationRepository:
 
     @staticmethod
     def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
-        time_span_df = pandas.DataFrame(index=pandas.date_range(start_date, end_date, req='T', name="datetime",
-                                                                time_zone=time_zone)
-                                        ).tz_localize(None)
-        station_df = station_df.join([time_span_df], how="outer")
+        year_2016 = pandas.date_range(start_date, end_date, req='T', name="datetime", time_zone=time_zone)
+        time_span_df = pandas.DataFrame(index=year_2016).tz_localize(None)
+        station_df = time_span_df.join([station_df])
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
         return station_df
 

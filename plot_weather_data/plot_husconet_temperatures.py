@@ -6,33 +6,34 @@ import os
 
 import pandas
 from matplotlib import pyplot
-import seaborn
+import matplotlib.dates as mdates
 
 from gather_weather_data.husconet import HUSCONET_STATIONS
 from filter_weather_data.filters import PROCESSED_DATA_DIR
 
-seaborn.set(style='ticks')
 
-
-def plot_stations(start, end):
+def plot_stations(time_zone):
     """
     Plots all HUSCONET weather stations in the background.
     """
-    plot_df = pandas.DataFrame()
 
-    for husconet_station in HUSCONET_STATIONS[start:end]:
+    ax = pyplot.subplot()
+
+    for husconet_station in HUSCONET_STATIONS:
         csv_file = os.path.join(PROCESSED_DATA_DIR, "husconet", husconet_station + ".csv")
         logging.debug("loading " + csv_file)
-        husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
-        plot_df[husconet_station] = husconet_station_df.temperature
+        husconet_station_df = (pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+                               .tz_localize("UTC").tz_convert(time_zone).tz_localize(None))
+        husconet_station_df.temperature.plot(label=husconet_station, alpha=.2)
 
     logging.debug("start plotting")
-    ax = seaborn.boxplot(data=plot_df, width=.5)
-    ax.set(xlabel="HUSCONET Station", ylabel="Temperature (in °C)")
+    ax.set_ylabel('Temperature in °C')
+    ax.set_xlabel('Zeit')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m.%Y'))
+    pyplot.legend()
     pyplot.show()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    for start, end in [(0, 5), (5, 10)]:
-        plot_stations(start, end)
+    plot_stations(time_zone="CET")
