@@ -10,6 +10,7 @@ import logging
 
 from .filters import PROCESSED_DATA_DIR
 from .filters import StationRepository
+from .filters import GermanWinterTime
 from .filters.preparation.average_husconet_radiation import average_solar_radiation_across_husconet_stations
 from .filters.preparation.average_husconet_temperature import average_temperature_across_husconet_stations
 from .filters.remove_wrongly_positioned_stations import filter_stations as filter_wrongly_positioned_stations
@@ -69,15 +70,23 @@ def show_mini_statistics(old_station_dicts, new_station_dicts):
     old_stations = [station["name"] for station in old_station_dicts]
     new_stations = [station["name"] for station in new_station_dicts]
     filtered_stations = list(set(old_stations) - set(new_stations))
-    logging.info("before: " + str(len(old_station_dicts)))
-    logging.info("after:  " + str(len(new_station_dicts)))
-    logging.info("diff:   " + str(len(filtered_stations)))
-    logging.debug("before:            ")
+    logging.info("# stations before: " + str(len(old_station_dicts)))
+    logging.info("# stations after:  " + str(len(new_station_dicts)))
+    logging.info("# stations diff:   " + str(len(filtered_stations)))
+    no_rows_old = sum([station["data_frame"].temperature.count() for station in old_station_dicts])
+    no_rows_new = sum([station["data_frame"].temperature.count() for station in new_station_dicts])
+    logging.info("# rows before: " + str(no_rows_old))
+    logging.info("# rows after:  " + str(no_rows_new))
+    logging.info("# rows diff:   " + str(no_rows_old - no_rows_new))
+    logging.debug("before:")
     logging.debug([station for station in old_stations])
-    logging.debug("removed by filter: ")
+    logging.debug("removed by filter:")
     logging.debug([station for station in filtered_stations])
-    logging.debug("remaining stations: ")
+    logging.debug("remaining stations:")
     logging.debug([station for station in new_stations])
+    if len(new_station_dicts):
+        logging.debug("example df")
+        new_station_dicts[0]["data_frame"].info()
 
 
 class FilterApplier:
@@ -171,7 +180,7 @@ class FilterApplier:
         """
         csv_path_not_unshaded = os.path.join(
             self.output_dir,
-            "station_dicts_not_unshaded.csv"
+            "station_dicts_shaded.csv"
         )
         shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
         if not os.path.isfile(csv_path_not_unshaded) or self.force_overwrite:
@@ -192,21 +201,18 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     prepare()
 
     station_repository = StationRepository(private_weather_stations_file_name)
-    all_found_station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
+    station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
     meta_info_df = station_repository.get_all_stations()
-    logging.debug("start: " + str(len(all_found_station_dicts)))
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
 
     # EXTREME
-    filter_applier.apply_extreme_record_filter(all_found_station_dicts, minimum, maximum)
-    show_mini_statistics(all_found_station_dicts, all_found_station_dicts)
+    filter_applier.apply_extreme_record_filter(station_dicts, minimum, maximum)
 
     # POSITION
-    with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(all_found_station_dicts,
-                                                                                     meta_info_df)
+    with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(station_dicts, meta_info_df)
     logging.debug("position - empty")
-    show_mini_statistics(all_found_station_dicts, with_valid_position_station_dicts)
+    show_mini_statistics(station_dicts, with_valid_position_station_dicts)
 
     # INFREQUENT
     frequent_station_dicts = filter_applier.apply_infrequent_record_filter(with_valid_position_station_dicts)
@@ -223,23 +229,12 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     logging.debug("indoor - shaded")
     show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
 
-    # Done, just show again the stats
-    logging.debug("################# Stats")
-    logging.debug("start - position")
-    show_mini_statistics(all_found_station_dicts, with_valid_position_station_dicts)
-    logging.debug("position - infrequent")
-    show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
-    logging.debug("infrequent - indoor")
-    show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
-    logging.debug("indoor - shaded")
-    show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
-
 
 def demo():
     start_date = "2016-01-01T00:00:00+01:00"
     end_date = "2016-12-31T00:00:00+01:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
-    time_zone = "CET"
+    time_zone = GermanWinterTime()
     hamburg_minimum = -29.1 - 20  # -29.1°C is the record, 20 degrees additionally for free
     hamburg_maximum = 37.3 + 40  # 37.3°C is the record, 40 degrees additionally for free (don't remove direct sunlight)
     run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True, hamburg_minimum,

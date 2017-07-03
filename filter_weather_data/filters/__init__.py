@@ -23,6 +23,21 @@ PROCESSED_DATA_DIR = os.path.join(
 TEMPORAL_SPAN = 30
 
 
+class GermanWinterTime(datetime.tzinfo):
+    """
+    The German winter time (no summer time)
+    """
+
+    def utcoffset(self, dt):
+        return datetime.timedelta(hours=1)
+
+    def tzname(self, dt):
+        return "GermanWinterTime"
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
+
+
 class StationRepository:
 
     summary_dir = os.path.join(PROCESSED_DATA_DIR, "station_summaries")
@@ -80,7 +95,7 @@ class StationRepository:
         for station_name, lat, lon in self.get_all_stations().itertuples():
             if limit:
                 k += 1
-                if k == limit:
+                if k == limit + 1:
                     break
             station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
             if station_dict is not None:
@@ -122,7 +137,10 @@ class StationRepository:
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' at all".format(station=station))
                 return None
-            station_df = self._handle_time_zone_related_issues(station_df, time_zone, start_date, end_date)
+            if time_zone is not None:
+                station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
+            if not station_df.index.is_monotonic:  # Some JSON are damaged, so we need to sort them again
+                station_df.sort_index(inplace=True)
             station_df = station_df[start_date:end_date]
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
@@ -174,16 +192,8 @@ class StationRepository:
         return searched_station_summary_file_name
 
     @staticmethod
-    def _handle_time_zone_related_issues(station_df, time_zone, start_date, end_date):
-        if time_zone is not None:
-            station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
-        if not station_df.index.is_monotonic:  # Some JSON are damaged, so we need to sort them again
-            station_df.sort_index(inplace=True)
-        return station_df
-
-    @staticmethod
     def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
-        year_2016 = pandas.date_range(start_date, end_date, req='T', name="datetime", time_zone=time_zone)
+        year_2016 = pandas.date_range(start_date, end_date, freq='T', name="datetime", time_zone=time_zone)
         time_span_df = pandas.DataFrame(index=year_2016).tz_localize(None)
         station_df = time_span_df.join([station_df])
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)

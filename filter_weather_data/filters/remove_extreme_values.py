@@ -35,6 +35,13 @@ def check_station(station_dict, minimum, maximum):
         logging.debug(above_maximum.head(3))
     station_df.loc[station_df.temperature > maximum] = numpy.nan
 
+    if station_df.empty:
+        return False
+    elif station_df.temperature.count() == 0:
+        return False
+    else:
+        return True
+
 
 def filter_stations(station_dicts, minimum, maximum):
     """
@@ -43,10 +50,12 @@ def filter_stations(station_dicts, minimum, maximum):
     :param maximum: The maximum value which is acceptable
     :param station_dicts: The station dicts
     """
+    filtered_station_dicts = []
     for station_dict in station_dicts:
-        logging.debug("extreme " + station_dict["name"])
-        check_station(station_dict, minimum, maximum)
-    return station_dicts
+        # logging.debug("extreme " + station_dict["name"])
+        if check_station(station_dict, minimum, maximum):
+            filtered_station_dicts.append(station_dict)
+    return filtered_station_dicts
 
 
 def demo():

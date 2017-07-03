@@ -42,9 +42,11 @@ def filter_stations(station_dicts, meta_info_df):
 
     filtered_stations = []
     for station_dict in station_dicts:
-        logging.debug("position " + station_dict["name"])
+        # logging.debug("position " + station_dict["name"])
         if station_dict["name"] in meta_info_df.index and check_station(station_dict, meta_info_df):
             filtered_stations.append(station_dict)
+        else:
+            logging.debug(station_dict["name"] + " has no valid position")
     return filtered_stations
 
 

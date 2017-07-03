@@ -66,16 +66,16 @@ def check_station(station_df, reference_interval):
     """
     for year in station_df.index.year.unique():
         year_key = "{year}".format(year=year)
-        year_df = station_df.loc[year_key]
+        year_df = station_df.loc[year_key:year_key]
 
         minimum_temperatures_per_month = []
         daily_standard_deviation_per_month = []
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
-            month_df = year_df.loc[month_key]
+            month_df = year_df.loc[month_key:month_key]
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
-                day_df = station_df.loc[day_key]
+                day_df = station_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
                 if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
                     minimum_temperatures_per_month.append(t_min)
@@ -85,12 +85,12 @@ def check_station(station_df, reference_interval):
 
             if len(minimum_temperatures_per_month) == 0:
                 logging.debug(month_key)
-                logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+                logging.debug("not enough data for computing reliable statistics! Use the infrequent filter before!")
                 station_df.info()
                 return False
             if len(daily_standard_deviation_per_month) == 0:
                 logging.debug(month_key)
-                logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+                logging.debug("not enough data for computing reliable statistics! Use the infrequent filter before!")
                 station_df.info()
                 return False
 
@@ -99,7 +99,6 @@ def check_station(station_df, reference_interval):
             if (minimum_temperature_mean, temperature_standard_deviation) not in reference_interval[month_key]:
                 logging.debug(month_key)
                 return False
-    station_df.dropna(axis=0, subset=["temperature"], how='any', inplace=True)
     return True
 
 
@@ -160,7 +159,7 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
     filtered_stations = []
 
     for station_dict in station_dicts:
-        logging.debug("indoor " + station_dict["name"])
+        # logging.debug("indoor " + station_dict["name"])
         if check_station(station_dict["data_frame"], reference_interval):
             filtered_stations.append(station_dict)
     return filtered_stations

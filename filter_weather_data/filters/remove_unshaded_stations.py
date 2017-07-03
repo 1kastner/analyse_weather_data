@@ -78,7 +78,7 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
 
     filtered_stations = []
     for station_dict in station_dicts:
-        logging.debug("unshaded " + station_dict["name"])
+        # logging.debug("unshaded " + station_dict["name"])
         if check_station(station_dict["data_frame"], reference_temperature_df, reference_radiation_df):
             filtered_stations.append(station_dict)
     return filtered_stations

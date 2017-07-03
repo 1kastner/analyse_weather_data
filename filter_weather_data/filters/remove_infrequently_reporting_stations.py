@@ -40,11 +40,11 @@ def check_station(station_dict):
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = month_df.loc[day_key:day_key]  # avoids getting a series if a single entry exists
-                if isinstance(day_df, pandas.DataFrame) and day_df.temperature.count() < 19:  # obs for less than 19h
+                if day_df.temperature.count() < 19:  # obs for less than 19h
                     continue
                 if len(day_df.index.hour.unique()) < 19:  # less than 19h observations
                     station_df.loc[day_key].temperature = numpy.nan
-            station_df.dropna(subset=["temperature"], inplace=True)
+            station_df.dropna(axis='index', how='any', subset=["temperature"], inplace=True)
             eighty_percent_of_month = round(calendar.monthrange(year, month)[1] * .8)
             days_with_enough_reports = len(month_df.index.day.unique())
             if days_with_enough_reports <= eighty_percent_of_month:
@@ -61,7 +61,7 @@ def filter_stations(station_dicts):
     """
     filtered_stations = []
     for station_dict in station_dicts:
-        logging.debug("infrequent " + station_dict["name"])
+        # logging.debug("infrequent " + station_dict["name"])
         if check_station(station_dict):
             filtered_stations.append(station_dict)
     return filtered_stations
