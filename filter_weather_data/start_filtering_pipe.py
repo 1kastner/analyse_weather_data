@@ -65,10 +65,106 @@ def save_station_dicts_as_time_span_summary(station_dicts):
         df.to_csv(csv_file)
 
 
-def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False):
+def show_mini_statistics(old_station_dicts, new_station_dicts):
+    old_stations = [station["name"] for station in old_station_dicts]
+    new_stations = [station["name"] for station in new_station_dicts]
+    filtered_stations = list(set(old_stations) - set(new_stations))
+    logging.info("before: " + str(len(old_station_dicts)))
+    logging.info("after:  " + str(len(new_station_dicts)))
+    logging.info("diff:   " + str(len(filtered_stations)))
+    logging.debug("before:            ")
+    logging.debug([station for station in old_stations])
+    logging.debug("removed by filter: ")
+    logging.debug([station for station in filtered_stations])
+    logging.debug("remaining stations: ")
+    logging.debug([station for station in new_stations])
 
-    station_repository = StationRepository(private_weather_stations_file_name)
-    station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
+
+class FilterApplier:
+
+    def __init__(self, output_dir, force_overwrite, start_date, end_date, time_zone):
+        self.output_dir = output_dir
+        self.force_overwrite = force_overwrite
+        self.start_date = start_date
+        self.end_date = end_date
+        self.time_zone = time_zone
+
+    def apply_invalid_position_filter(self, station_dicts):
+        """
+        Filters out stations which have invalid positions
+        
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        csv_path_with_valid_position = os.path.join(
+            self.output_dir,
+            "station_dicts_with_valid_position"
+        )
+        if not os.path.isfile(csv_path_with_valid_position) or self.force_overwrite:
+            with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts)
+            save_station_dicts_as_metadata_csv(with_valid_position_station_dicts, csv_path_with_valid_position)
+        else:
+            with_valid_position_station_dicts = station_dicts
+        return with_valid_position_station_dicts
+
+    def apply_infrequent_record_filter(self, station_dicts):
+        """
+        Filters out stations which have infrequent records, less than 80% per day or 80% per month
+
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        csv_path_not_infrequent = os.path.join(
+            self.output_dir,
+            "station_dicts_not_infrequent"
+        )
+        if not os.path.isfile(csv_path_not_infrequent) or self.force_overwrite:
+            frequent_station_dicts = filter_infrequently_reporting_stations(station_dicts)
+            save_station_dicts_as_metadata_csv(frequent_station_dicts, csv_path_not_infrequent)
+        else:
+            frequent_station_dicts = station_dicts
+        return frequent_station_dicts
+
+    def apply_not_indoor_filter(self, station_dicts):
+        """
+        Filters out stations which look like they are positioned inside
+
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        csv_path_not_indoor = os.path.join(
+            self.output_dir,
+            "station_dicts_not_indoor"
+        )
+        if not os.path.isfile(csv_path_not_indoor) or self.force_overwrite:
+            indoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date,
+                                                              self.time_zone)
+            save_station_dicts_as_metadata_csv(indoor_station_dicts, csv_path_not_indoor)
+        else:
+            indoor_station_dicts = station_dicts
+        return indoor_station_dicts
+
+    def apply_unshaded_filter(self, station_dicts):
+        """
+        Filters out stations which look like they are exposed to direct sunlight
+
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        csv_path_not_unshaded = os.path.join(
+            self.output_dir,
+            "station_dicts_not_unshaded"
+        )
+        if not os.path.isfile(csv_path_not_unshaded) or self.force_overwrite:
+            shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date,
+                                                                  self.time_zone)
+            save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_not_unshaded)
+        else:
+            shaded_station_dicts = station_dicts
+        return shaded_station_dicts
+
+
+def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False):
 
     output_dir = os.path.join(
         PROCESSED_DATA_DIR,
@@ -77,69 +173,40 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    # POSITION
-    csv_path_with_valid_position = os.path.join(
-        output_dir,
-        "station_dicts_with_valid_position"
-    )
-    if not os.path.isfile(csv_path_with_valid_position) or force_overwrite:
-        with_position_station_dicts = filter_wrongly_positioned_stations(station_dicts)
-        save_station_dicts_as_metadata_csv(with_position_station_dicts, csv_path_with_valid_position)
-    else:
-        with_position_station_dicts = station_dicts
-    logging.debug("valid position " + str([station_dict["name"] for station_dict in with_position_station_dicts]))
+    prepare()
 
-    # EMPTY
-    csv_path_not_empty = os.path.join(
-        output_dir,
-        "station_dicts_not_empty"
-    )
-    if not os.path.isfile(csv_path_not_empty) or force_overwrite:
-        not_empty_station_dicts = filter_empty_stations(with_position_station_dicts)
-        save_station_dicts_as_metadata_csv(not_empty_station_dicts, csv_path_not_empty)
-    else:
-        not_empty_station_dicts = with_position_station_dicts
-    logging.debug("some data " + str([station_dict["name"] for station_dict in not_empty_station_dicts]))
+    station_repository = StationRepository(private_weather_stations_file_name)
+    all_found_station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
+
+    filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
+
+    # NOT EMPTY
+    not_empty_station_dicts = filter_applier.apply_not_empty_filter(all_found_station_dicts)
+    logging.debug("all - empty")
+    show_mini_statistics(all_found_station_dicts, not_empty_station_dicts)
+
+    # POSITION
+    with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(not_empty_station_dicts)
+    logging.debug("position - empty")
+    show_mini_statistics(not_empty_station_dicts, with_valid_position_station_dicts)
 
     # INFREQUENT
-    csv_path_not_infrequent = os.path.join(
-        output_dir,
-        "station_dicts_not_infrequent"
-    )
-    if not os.path.isfile(csv_path_not_infrequent) or force_overwrite:
-        not_infrequent_station_dicts = filter_infrequently_reporting_stations(not_empty_station_dicts)
-        save_station_dicts_as_metadata_csv(not_infrequent_station_dicts, csv_path_not_infrequent)
-    else:
-        not_infrequent_station_dicts = not_empty_station_dicts
-    logging.debug("frequent " + str([station_dict["name"] for station_dict in not_infrequent_station_dicts]))
+    frequent_station_dicts = filter_applier.apply_infrequent_record_filter(with_valid_position_station_dicts)
+    logging.debug("position - infrequent")
+    show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
 
     # INDOOR
-    csv_path_not_indoor = os.path.join(
-        output_dir,
-        "station_dicts_not_indoor"
-    )
-    if not os.path.isfile(csv_path_not_indoor) or force_overwrite:
-        not_indoor_station_dicts = filter_indoor_stations(not_infrequent_station_dicts, start_date, end_date, time_zone)
-        save_station_dicts_as_metadata_csv(not_indoor_station_dicts, csv_path_not_indoor)
-    else:
-        not_indoor_station_dicts = not_infrequent_station_dicts
-    logging.debug("outdoor " + str([station_dict["name"] for station_dict in not_indoor_station_dicts]))
+    indoor_station_dicts = filter_applier.apply_infrequent_record_filter(frequent_station_dicts)
+    logging.debug("infrequent - indoor")
+    show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
 
     # UNSHADED
-    csv_path_not_unshaded = os.path.join(
-        output_dir,
-        "station_dicts_not_unshaded"
-    )
-    if not os.path.isfile(csv_path_not_unshaded) or force_overwrite:
-        not_unshaded_station_dicts = filter_unshaded_stations(not_indoor_station_dicts, start_date, end_date,
-                                                              time_zone)
-        save_station_dicts_as_metadata_csv(not_unshaded_station_dicts, csv_path_not_unshaded)
-    else:
-        not_unshaded_station_dicts = not_indoor_station_dicts
-    logging.debug("shaded " + str([station_dict["name"] for station_dict in not_unshaded_station_dicts]))
+    shaded_station_dicts = filter_applier.apply_infrequent_record_filter(indoor_station_dicts)
+    logging.debug("indoor - shaded")
+    show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
 
     # save for future processing
-    save_station_dicts_as_time_span_summary(not_unshaded_station_dicts)
+    save_station_dicts_as_time_span_summary(shaded_station_dicts)
 
 
 def demo():

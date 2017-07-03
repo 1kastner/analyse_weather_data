@@ -9,15 +9,17 @@ import logging
 from . import StationRepository
 
 
-def check_station(station_df):
+def is_empty(station_df):
     """
-    Be aware that start and end date are not time zone sensitive when provided as a string, see
-    https://github.com/pandas-dev/pandas/issues/16785
+    Checks if any records exist
     
     :param station_df: The station data frame (pandas)
     """
-    empty_station = station_df.empty or station_df.temperature.count() == 0
-    return not empty_station
+    if station_df.empty:
+        return True
+    if station_df.temperature.count() == 0:
+        return True
+    return False
 
 
 def filter_stations(station_dicts):
@@ -28,7 +30,13 @@ def filter_stations(station_dicts):
     filtered_stations = []
     for station_dict in station_dicts:
         logging.debug("empty " + station_dict["name"])
-        if check_station(station_dict["data_frame"]):
+        if is_empty(station_dict["data_frame"]):
+            logging.debug("-> is empty")
+            if station_dict["name"] == "IHHHINSC4":
+                logging.debug(station_dict["data_frame"])
+                station_dict["data_frame"].info()
+        else:
+            logging.debug("-> not empty")
             filtered_stations.append(station_dict)
     return filtered_stations
 

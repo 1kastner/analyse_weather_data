@@ -28,6 +28,8 @@ class StationRepository:
 
     stations_df = None
 
+    cached_os_list_dir = None
+
     def __init__(self, private_weather_stations_file_name="private_weather_stations.csv"):
         """
         
@@ -95,7 +97,10 @@ class StationRepository:
             return None
         else:
             csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
+            logging.debug("loading " + station + " with file " + csv_file)
             station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+            if station_df.empty or station_df.temperature.count() == 0:
+                return None
             station_df = self._handle_time_zone_related_issues(station_df, time_zone, start_date, end_date)
             if minutely:
                 station_df = self._create_minutely_data_frame(station_df, start_date, end_date, time_zone)
@@ -122,13 +127,17 @@ class StationRepository:
     @classmethod
     def _search_summary_file(cls, station, start_date, end_date):
         searched_station_summary_file_name = None
-        for station_summary_file_name in os.listdir(cls.summary_dir):
+        if cls.cached_os_list_dir is None:
+            cls.cached_os_list_dir = os.listdir(cls.summary_dir)
+        for station_summary_file_name in cls.cached_os_list_dir:
             if not station_summary_file_name.endswith(".csv"):
                 continue
             if not station_summary_file_name.startswith(station):
                 continue
             station_summary_file_name = station_summary_file_name[:-4]  # cut of '.csv'
-            station, start_date_span_text, end_date_span_text = station_summary_file_name.split("_")
+            station_part, start_date_span_text, end_date_span_text = station_summary_file_name.split("_")
+            if station_part != station:
+                continue
             start_date_span = datetime.datetime.strptime(start_date_span_text, "%Y%m%d").replace(
                 tzinfo=start_date.tzinfo)
             end_date_span = datetime.datetime.strptime(end_date_span_text, "%Y%m%d").replace(tzinfo=end_date.tzinfo)
@@ -151,6 +160,7 @@ class StationRepository:
                                         ).tz_localize(None)
         station_df = station_df.join([time_span_df], how="outer")
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
+        station_df.info()
         return station_df
 
     def _get_metadata(self, station):
