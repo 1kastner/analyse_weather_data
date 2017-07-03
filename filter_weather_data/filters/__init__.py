@@ -6,6 +6,7 @@ import os
 import datetime
 import logging
 
+import numpy
 import pandas
 import dateutil.parser
 
@@ -30,12 +31,15 @@ class StationRepository:
 
     cached_os_list_dir = None
 
-    def __init__(self, private_weather_stations_file_name="private_weather_stations.csv"):
+    def __init__(self, private_weather_stations_file_name="private_weather_stations.csv", summary_dir=None):
         """
         
         :param private_weather_stations_file_name: Where to look up the station metadata
         """
         self.private_weather_stations_file_name = private_weather_stations_file_name
+        if summary_dir is not None:
+            self.summary_dir = summary_dir
+        self.cached_os_list_dir = os.listdir(self.summary_dir)
 
     def get_all_stations(self):
         """
@@ -64,11 +68,18 @@ class StationRepository:
         :return: 
         """
         station_dicts = []
+        i = 0
         for station_name, lat, lon in self.get_all_stations().itertuples():
+            i += 1
+            if i > 1000:
+                break
             station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
             if station_dict is not None:
                 station_dicts.append(station_dict)
                 logging.debug("load " + station_name)
+            else:
+                self.stations_df.lat.loc[station_name] = numpy.nan
+        self.stations_df = self.stations_df[self.stations_df.lat.notnull()]
         return station_dicts
 
     def load_station(self, station, start_date, end_date, time_zone=None, minutely=False):
@@ -100,6 +111,7 @@ class StationRepository:
             logging.debug("loading " + station + " with file " + csv_file)
             station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
             if station_df.empty or station_df.temperature.count() == 0:
+                logging.debug("Not enough data for '{station}'".format(station=station))
                 return None
             station_df = self._handle_time_zone_related_issues(station_df, time_zone, start_date, end_date)
             if minutely:
@@ -124,25 +136,28 @@ class StationRepository:
             end_date = dateutil.parser.parse(end_date)
         return start_date, end_date
 
-    @classmethod
-    def _search_summary_file(cls, station, start_date, end_date):
+    def _search_summary_file(self, station, start_date, end_date):
         searched_station_summary_file_name = None
-        if cls.cached_os_list_dir is None:
-            cls.cached_os_list_dir = os.listdir(cls.summary_dir)
-        for station_summary_file_name in cls.cached_os_list_dir:
+        for station_summary_file_name in self.cached_os_list_dir:
             if not station_summary_file_name.endswith(".csv"):
                 continue
             if not station_summary_file_name.startswith(station):
                 continue
             station_summary_file_name = station_summary_file_name[:-4]  # cut of '.csv'
-            station_part, start_date_span_text, end_date_span_text = station_summary_file_name.split("_")
-            if station_part != station:
-                continue
-            start_date_span = datetime.datetime.strptime(start_date_span_text, "%Y%m%d").replace(
-                tzinfo=start_date.tzinfo)
-            end_date_span = datetime.datetime.strptime(end_date_span_text, "%Y%m%d").replace(tzinfo=end_date.tzinfo)
-            if start_date_span <= start_date and end_date_span >= end_date:
-                searched_station_summary_file_name = station_summary_file_name + ".csv"
+            file_name_parts = station_summary_file_name.split("_")
+            if len(file_name_parts) == 1:
+                searched_station_summary_file_name = file_name_parts[0] + ".csv"
+                break
+            elif len(file_name_parts) == 3:
+                station_part, start_date_span_text, end_date_span_text = file_name_parts
+                if station_part != station:
+                    continue
+                start_date_span = datetime.datetime.strptime(start_date_span_text, "%Y%m%d").replace(
+                    tzinfo=start_date.tzinfo)
+                end_date_span = datetime.datetime.strptime(end_date_span_text, "%Y%m%d").replace(tzinfo=end_date.tzinfo)
+                if start_date_span <= start_date and end_date_span >= end_date:
+                    searched_station_summary_file_name = station_summary_file_name + ".csv"
+                    break
         return searched_station_summary_file_name
 
     @staticmethod
@@ -160,7 +175,6 @@ class StationRepository:
                                         ).tz_localize(None)
         station_df = station_df.join([time_span_df], how="outer")
         station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
-        station_df.info()
         return station_df
 
     def _get_metadata(self, station):

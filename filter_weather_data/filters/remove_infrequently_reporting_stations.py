@@ -34,6 +34,7 @@ def check_station(station_dict):
             month_key = "{year}-{month}".format(year=year, month=month)
             month_df = year_df.loc[month_key:month_key]  # avoids getting a series if a single entry exists
             if isinstance(month_df, pandas.DataFrame) and month_df.temperature.count() < 22:  # obs for less than 22d
+                logging.debug(month_key + " " + station_name + " got less than 22 entries - must be less than 80%")
                 return False
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)

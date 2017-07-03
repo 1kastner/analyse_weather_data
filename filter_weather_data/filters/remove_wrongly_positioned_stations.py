@@ -26,13 +26,12 @@ def check_station(station_dict, meta_info_df):
         return True
 
 
-def filter_stations(station_dicts):
+def filter_stations(station_dicts, meta_info_df):
     """
 
     :param station_dicts: The station dict
+    :param meta_info_df: The meta information
     """
-    station_repository = StationRepository()
-    meta_info_df = station_repository.get_all_stations()
 
     # entries which are at the same coordinates
     duplicated_indices = meta_info_df.duplicated(["lat", "lon"], keep=False)
@@ -50,9 +49,11 @@ def filter_stations(station_dicts):
 
 
 def demo():
+    station_repository = StationRepository()
+    meta_info_df = station_repository.get_all_stations()
     stations = ['IHAMBURG69', 'IBNNINGS2']
     station_dicts = [{"name": station} for station in stations]
-    stations_at_good_position = filter_stations(station_dicts)
+    stations_at_good_position = filter_stations(station_dicts, meta_info_df)
     print([station_dict["name"] for station_dict in stations_at_good_position])
 
 

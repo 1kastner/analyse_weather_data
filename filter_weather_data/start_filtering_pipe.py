@@ -8,14 +8,11 @@ if you want to see the demo.
 import os
 import logging
 
-import pandas
-
 from .filters import PROCESSED_DATA_DIR
 from .filters import StationRepository
 from .filters.preparation.average_husconet_radiation import average_solar_radiation_across_husconet_stations
 from .filters.preparation.average_husconet_temperature import average_temperature_across_husconet_stations
 from .filters.remove_wrongly_positioned_stations import filter_stations as filter_wrongly_positioned_stations
-from .filters.remove_empty_stations import filter_stations as filter_empty_stations
 from .filters.remove_infrequently_reporting_stations import filter_stations as filter_infrequently_reporting_stations
 from .filters.remove_indoor_stations import filter_stations as filter_indoor_stations
 from .filters.remove_unshaded_stations import filter_stations as filter_unshaded_stations
@@ -47,15 +44,16 @@ def save_station_dicts_as_metadata_csv(station_dicts, csv_path):
             f.write(station_name + "," + lat + "," + lon + eol)
 
 
-def save_station_dicts_as_time_span_summary(station_dicts):
+def save_station_dicts_as_time_span_summary(station_dicts, output_dir=None):
     """
     
     :param station_dicts: The station dicts
     """
-    output_dir = os.path.join(
-        PROCESSED_DATA_DIR,
-        "filtered_station_summaries"
-    )
+    if output_dir is None:
+        output_dir = os.path.join(
+            PROCESSED_DATA_DIR,
+            "filtered_station_summaries"
+        )
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
     for station_dict in station_dicts:
@@ -89,22 +87,21 @@ class FilterApplier:
         self.end_date = end_date
         self.time_zone = time_zone
 
-    def apply_invalid_position_filter(self, station_dicts):
+    def apply_invalid_position_filter(self, station_dicts, meta_info_df):
         """
         Filters out stations which have invalid positions
         
         :param station_dicts: The station dicts
+        :param meta_info_df: The meta info.
         :return: Good stations
         """
         csv_path_with_valid_position = os.path.join(
             self.output_dir,
-            "station_dicts_with_valid_position"
+            "station_dicts_with_valid_position.csv"
         )
+        with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts, meta_info_df)
         if not os.path.isfile(csv_path_with_valid_position) or self.force_overwrite:
-            with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts)
             save_station_dicts_as_metadata_csv(with_valid_position_station_dicts, csv_path_with_valid_position)
-        else:
-            with_valid_position_station_dicts = station_dicts
         return with_valid_position_station_dicts
 
     def apply_infrequent_record_filter(self, station_dicts):
@@ -116,13 +113,11 @@ class FilterApplier:
         """
         csv_path_not_infrequent = os.path.join(
             self.output_dir,
-            "station_dicts_not_infrequent"
+            "station_dicts_frequent.csv"
         )
+        frequent_station_dicts = filter_infrequently_reporting_stations(station_dicts)
         if not os.path.isfile(csv_path_not_infrequent) or self.force_overwrite:
-            frequent_station_dicts = filter_infrequently_reporting_stations(station_dicts)
             save_station_dicts_as_metadata_csv(frequent_station_dicts, csv_path_not_infrequent)
-        else:
-            frequent_station_dicts = station_dicts
         return frequent_station_dicts
 
     def apply_not_indoor_filter(self, station_dicts):
@@ -134,14 +129,11 @@ class FilterApplier:
         """
         csv_path_not_indoor = os.path.join(
             self.output_dir,
-            "station_dicts_not_indoor"
+            "station_dicts_not_indoor.csv"
         )
+        indoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
         if not os.path.isfile(csv_path_not_indoor) or self.force_overwrite:
-            indoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date,
-                                                              self.time_zone)
             save_station_dicts_as_metadata_csv(indoor_station_dicts, csv_path_not_indoor)
-        else:
-            indoor_station_dicts = station_dicts
         return indoor_station_dicts
 
     def apply_unshaded_filter(self, station_dicts):
@@ -153,7 +145,7 @@ class FilterApplier:
         """
         csv_path_not_unshaded = os.path.join(
             self.output_dir,
-            "station_dicts_not_unshaded"
+            "station_dicts_not_unshaded.csv"
         )
         if not os.path.isfile(csv_path_not_unshaded) or self.force_overwrite:
             shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date,
@@ -177,18 +169,16 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
 
     station_repository = StationRepository(private_weather_stations_file_name)
     all_found_station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
+    meta_info_df = station_repository.get_all_stations()
+    logging.debug("start: " + str(len(all_found_station_dicts)))
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
 
-    # NOT EMPTY
-    not_empty_station_dicts = filter_applier.apply_not_empty_filter(all_found_station_dicts)
-    logging.debug("all - empty")
-    show_mini_statistics(all_found_station_dicts, not_empty_station_dicts)
-
     # POSITION
-    with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(not_empty_station_dicts)
+    with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(all_found_station_dicts,
+                                                                                     meta_info_df)
     logging.debug("position - empty")
-    show_mini_statistics(not_empty_station_dicts, with_valid_position_station_dicts)
+    show_mini_statistics(all_found_station_dicts, with_valid_position_station_dicts)
 
     # INFREQUENT
     frequent_station_dicts = filter_applier.apply_infrequent_record_filter(with_valid_position_station_dicts)
