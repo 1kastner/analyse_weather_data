@@ -54,7 +54,7 @@ class StationRepository:
             self.stations_df = pandas.read_csv(csv_file, index_col="station")
         return self.stations_df
 
-    def load_all_stations(self, start_date, end_date, time_zone, minutely):
+    def load_all_stations(self, start_date, end_date, time_zone, minutely, limit=0):
         """
         
         :param start_date: The earliest day which must be included (potentially earlier)
@@ -65,10 +65,17 @@ class StationRepository:
         :type time_zone: datetime.tzinfo | str
         :param minutely: Resample data frame minutely
         :type minutely: bool
+        :param limit: Limit to k stations to load
         :return: 
         """
         station_dicts = []
+        if limit:
+            k = 0
         for station_name, lat, lon in self.get_all_stations().itertuples():
+            if limit:
+                k += 1
+                if k == limit:
+                    break
             station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
             if station_dict is not None:
                 station_dicts.append(station_dict)
@@ -107,9 +114,13 @@ class StationRepository:
             logging.debug("loading " + station + " with file " + csv_file)
             station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
             if station_df.empty or station_df.temperature.count() == 0:
-                logging.debug("Not enough data for '{station}'".format(station=station))
+                logging.debug("Not enough data for '{station}' at all".format(station=station))
                 return None
             station_df = self._handle_time_zone_related_issues(station_df, time_zone, start_date, end_date)
+            station_df = station_df[start_date:end_date]
+            if station_df.empty or station_df.temperature.count() == 0:
+                logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
+                return None
             if minutely:
                 station_df = self._create_minutely_data_frame(station_df, start_date, end_date, time_zone)
             meta_data = self._get_metadata(station)
@@ -162,7 +173,7 @@ class StationRepository:
             station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
         if not station_df.index.is_monotonic:  # Some JSON are damaged, so we need to sort them again
             station_df.sort_index(inplace=True)
-        return station_df[start_date:end_date]
+        return station_df
 
     @staticmethod
     def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):

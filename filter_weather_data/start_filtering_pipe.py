@@ -13,6 +13,7 @@ from .filters import StationRepository
 from .filters.preparation.average_husconet_radiation import average_solar_radiation_across_husconet_stations
 from .filters.preparation.average_husconet_temperature import average_temperature_across_husconet_stations
 from .filters.remove_wrongly_positioned_stations import filter_stations as filter_wrongly_positioned_stations
+from .filters.remove_extreme_values import filter_stations as filter_extreme_values
 from .filters.remove_infrequently_reporting_stations import filter_stations as filter_infrequently_reporting_stations
 from .filters.remove_indoor_stations import filter_stations as filter_indoor_stations
 from .filters.remove_unshaded_stations import filter_stations as filter_unshaded_stations
@@ -48,6 +49,7 @@ def save_station_dicts_as_time_span_summary(station_dicts, output_dir=None):
     """
     
     :param station_dicts: The station dicts
+    :param output_dir: The output directory for the summary
     """
     if output_dir is None:
         output_dir = os.path.join(
@@ -104,6 +106,17 @@ class FilterApplier:
             save_station_dicts_as_metadata_csv(with_valid_position_station_dicts, csv_path_with_valid_position)
         return with_valid_position_station_dicts
 
+    @staticmethod
+    def apply_extreme_record_filter(station_dicts, minimum, maximum):
+        """
+        Remove extreme values.
+        
+        :param station_dicts: The station dicts
+        :return: Good stations
+        """
+        filter_extreme_values(station_dicts, minimum, maximum)
+        return station_dicts
+
     def apply_infrequent_record_filter(self, station_dicts):
         """
         Filters out stations which have infrequent records, less than 80% per day or 80% per month
@@ -156,7 +169,8 @@ class FilterApplier:
         return shaded_station_dicts
 
 
-def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False):
+def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False,
+             minimum=-100, maximum=+100):
 
     output_dir = os.path.join(
         PROCESSED_DATA_DIR,
@@ -173,6 +187,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     logging.debug("start: " + str(len(all_found_station_dicts)))
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
+    filter_applier.apply_extreme_record_filter(all_found_station_dicts, minimum, maximum)
 
     # POSITION
     with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(all_found_station_dicts,
@@ -204,7 +219,7 @@ def demo():
     end_date = "2016-12-31T00:00:00+01:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
     time_zone = "CET"
-    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True)
+    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True, -50, 50)
 
 
 if __name__ == "__main__":

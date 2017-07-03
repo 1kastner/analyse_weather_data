@@ -69,6 +69,7 @@ def check_station(station_df, reference_interval):
         year_df = station_df.loc[year_key]
 
         minimum_temperatures_per_month = []
+        daily_standard_deviation_per_month = []
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
             logging.debug(month_key)
@@ -79,10 +80,21 @@ def check_station(station_df, reference_interval):
                 t_min = day_df.temperature.min()
                 if not numpy.isnan(t_min):
                     minimum_temperatures_per_month.append(t_min)
-            month_df = station_df[month_key]
+                t_std = day_df.temperature.std()
+                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
+                    daily_standard_deviation_per_month.append(t_std)
+                t_std = day_df.temperature.std()
+                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
+                    daily_standard_deviation_per_month.append(t_std)
+
+            if len(minimum_temperatures_per_month) == 0:
+                logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+            if len(daily_standard_deviation_per_month) == 0:
+                logging.error("not enough data for computing reliable statistics! Use the infrequent filter before!")
+
             minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
-            temperature_standard_deviation = month_df.temperature.std()
-            if (temperature_standard_deviation, minimum_temperature_mean) not in reference_interval[month_key]:
+            temperature_standard_deviation = statistics.mean(daily_standard_deviation_per_month)
+            if (minimum_temperature_mean, temperature_standard_deviation) not in reference_interval[month_key]:
                 return False
     return True
 
@@ -114,7 +126,7 @@ def get_reference_interval(start_date, end_date, time_zone):
                 if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
                     minimum_temperatures_per_month.append(t_min)
                 t_std = day_df.temperature.std()
-                if not numpy.isnan(t_std):
+                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
                     daily_standard_deviation.append(t_std)
 
             minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
