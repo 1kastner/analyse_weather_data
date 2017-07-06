@@ -31,34 +31,44 @@ def plot_station(start_date, end_date, time_zone):
     weather_stations = os.path.join(
         PROCESSED_DATA_DIR,
         "filtered_stations",
-        "station_dicts_frequent.csv"
-        # "station_dicts_outdoor.csv"
-        # "station_dicts_shaded.csv"
-        # "station_dicts_with_valid_position.csv"
-
+        # "station_dicts_frequent.csv"  # (2)
+        # "station_dicts_outdoor.csv"  # (3)
+        "station_dicts_shaded.csv"  # (4)
+        # "station_dicts_with_valid_position.csv"  # (1)
     )
     summary_dir = os.path.join(
         PROCESSED_DATA_DIR,
-        "filtered_station_summaries_frequent"
-        # "filtered_station_summaries_no_extreme_values"
-        # "filtered_station_summaries_of_shaded_stations"
-        # "station_summaries"
+        # "filtered_station_summaries_frequent"  # (2)
+        # "filtered_station_summaries_no_extreme_values"  # (1)
+        "filtered_station_summaries_of_shaded_stations"  # (3)
+        # "station_summaries"  # (0)
     )
+    fig = pyplot.figure()
+    fig.canvas.set_window_title(os.path.basename(weather_stations[:-4]) + " " + os.path.basename(summary_dir))
+
     station_repository = StationRepository(weather_stations, summary_dir)
-    for station_dict in station_repository.load_all_stations(start_date, end_date, time_zone, 80):
+    for station_dict in station_repository.load_all_stations(start_date, end_date, limit=2):
+        logging.debug("prepare plotting " + station_dict["name"])
         station_df = station_dict['data_frame']
         station_df = insert_nans(station_df)  # discontinue line if gap is too big
         station_df.temperature.plot(kind='line', color='gray', alpha=.2)
 
     logging.debug("load husconet")
-    csv_file = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average.csv")
+    csv_file = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average_temperature.csv")
     husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
     husconet_station_df = husconet_station_df[start_date:end_date]
     logging.debug("start plotting")
     ax = husconet_station_df.temperature.plot(color="blue", alpha=0.7)
+    tolerance = husconet_station_df.temperature_std * 3
+    upper_line = (husconet_station_df.temperature + tolerance)
+    upper_line.plot(color="green", alpha=0.7)
+    lower_line = (husconet_station_df.temperature - tolerance)
+    lower_line.plot(color="green", alpha=0.7)
     ax.set_ylabel('Temperature in °C')
     ax.set_xlabel('Zeit')
     pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m.%Y'))
+
+    logging.debug("show plot")
     pyplot.show()
 
 

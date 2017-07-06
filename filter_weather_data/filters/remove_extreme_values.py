@@ -21,6 +21,10 @@ def check_station(station_dict, minimum, maximum):
     :return: Only values inside the realistic range
     """
     station_df = station_dict["data_frame"]
+
+    logging.debug(station_df.loc[station_df.temperature < minimum].describe())
+    logging.debug(station_df.loc[station_df.temperature > maximum].describe())
+
     station_df.loc[station_df.temperature < minimum] = numpy.nan
     station_df.loc[station_df.temperature > maximum] = numpy.nan
 

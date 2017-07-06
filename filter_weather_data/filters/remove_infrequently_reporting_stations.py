@@ -41,7 +41,7 @@ def check_station(station_dict):
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = month_df.loc[day_key:day_key]  # avoids getting a series if a single entry exists
                 if day_df.temperature.count() < 19 or len(day_df.index.hour.unique()) < 19:
-                    station_df.loc[day_key].temperature = numpy.nan
+                    station_df.loc[day_key:day_key, "temperature"] = numpy.nan
             station_df.dropna(axis='index', how='any', subset=["temperature"], inplace=True)
             eighty_percent_of_month = int(round(calendar.monthrange(year, month)[1] * .8))
             days_with_enough_reports = len(month_df.index.day.unique())

@@ -25,6 +25,10 @@ class Ellipse:
         self.center_y = center_y
         self.radius_x_axis = radius_x_axis
         self.radius_y_axis = radius_y_axis
+        logging.debug("min x: " + str(self.center_x - self.radius_x_axis))
+        logging.debug("max x: " + str(self.center_x + self.radius_x_axis))
+        logging.debug("min y: " + str(self.center_y - self.radius_y_axis))
+        logging.debug("max y: " + str(self.center_y + self.radius_y_axis))
 
     def __contains__(self, point):
         """
@@ -54,6 +58,8 @@ class Ellipse:
                     ((point_y - self.center_y) ** 2 / self.radius_y_axis ** 2)
 
                 ) <= 1)
+            if inside_ellipse and not inside_ellipse:
+                logging.debug("inside rectangle but not inside ellipse")
         return inside_rectangle and inside_ellipse
 
 
@@ -68,19 +74,23 @@ def check_station(station_df, reference_interval):
         year_key = "{year}".format(year=year)
         year_df = station_df.loc[year_key:year_key]
 
-        minimum_temperatures_per_month = []
-        daily_standard_deviation_per_month = []
         for month in year_df.index.month.unique():
+            daily_minimum_temperatures_per_month = []
+            daily_standard_deviation_per_month = []
             month_key = "{year}-{month}".format(year=year, month=month)
             month_df = year_df.loc[month_key:month_key]
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = station_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
-                minimum_temperatures_per_month.append(t_min)
+                daily_minimum_temperatures_per_month.append(t_min)
                 t_std = day_df.temperature.std()
-                daily_standard_deviation_per_month.append(t_std)
-            minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
+                if numpy.isnan(t_std):
+                    logging.warning("No robust statistics possible, check frequent reporting!")
+                    raise RuntimeError("No robust statistics possible, check frequent reporting!")
+                else:
+                    daily_standard_deviation_per_month.append(t_std)
+            minimum_temperature_mean = statistics.mean(daily_minimum_temperatures_per_month)
             temperature_standard_deviation = statistics.mean(daily_standard_deviation_per_month)
             if (minimum_temperature_mean, temperature_standard_deviation) not in reference_interval[month_key]:
                 logging.debug(month_key)
@@ -100,29 +110,29 @@ def get_reference_interval(start_date, end_date, time_zone):
     reference_df = reference_df[start_date:end_date]
     result = {}
 
-    minimum_temperatures_per_month = []
-    daily_standard_deviation = []
     for year in reference_df.index.year.unique():
         year_key = str(year)
         year_df = reference_df.loc[year_key:year_key]
         for month in year_df.index.month.unique():
+            daily_minimum_temperatures_per_month = []
+            daily_standard_deviation_per_month = []
             month_key = "{year}-{month}".format(year=year, month=month)
             month_df = year_df.loc[month_key:month_key]
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = month_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
-                if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
-                    minimum_temperatures_per_month.append(t_min)
+                daily_minimum_temperatures_per_month.append(t_min)
                 t_std = day_df.temperature.std()
-                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
-                    daily_standard_deviation.append(t_std)
+                if not numpy.isnan(t_std):
+                    daily_standard_deviation_per_month.append(t_std)
 
-            minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
-            minimum_temperature_std = statistics.stdev(minimum_temperatures_per_month)
-            daily_standard_deviation_mean = statistics.mean(daily_standard_deviation)
-            daily_standard_deviation_std = statistics.stdev(daily_standard_deviation)
+            minimum_temperature_mean = statistics.mean(daily_minimum_temperatures_per_month)
+            minimum_temperature_std = statistics.stdev(daily_minimum_temperatures_per_month)
+            daily_standard_deviation_mean = statistics.mean(daily_standard_deviation_per_month)
+            daily_standard_deviation_std = statistics.stdev(daily_standard_deviation_per_month)
 
+            logging.debug(month_key)
             result[month_key] = Ellipse(
                 minimum_temperature_mean,
                 minimum_temperature_std * 5,
@@ -144,7 +154,7 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
     filtered_stations = []
 
     for station_dict in station_dicts:
-        # logging.debug("indoor " + station_dict["name"])
+        logging.debug("indoor " + station_dict["name"])
         if check_station(station_dict["data_frame"], reference_interval):
             filtered_stations.append(station_dict)
     return filtered_stations

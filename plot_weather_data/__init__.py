@@ -23,7 +23,7 @@ def insert_nans(station_df):
     :return: 
     """
     reference_df = pandas.DataFrame(
-        index=pandas.date_range(station_df.index[0], station_df.index[-1], freq='D', name="datetime"),
+        index=pandas.date_range(station_df.index[0], station_df.index[-1], freq='H', name="datetime"),
     )
 
     return station_df.join(reference_df, how="outer")

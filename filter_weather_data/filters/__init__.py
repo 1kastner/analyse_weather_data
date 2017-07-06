@@ -79,7 +79,7 @@ class StationRepository:
         stations_df = self.get_all_stations()
         return stations_df.loc[station]
 
-    def load_all_stations(self, start_date, end_date, time_zone, limit=0):
+    def load_all_stations(self, start_date, end_date, time_zone=None, limit=0):
         """
         
         :param start_date: The earliest day which must be included (potentially earlier)
@@ -141,6 +141,14 @@ class StationRepository:
                 station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
             if not station_df.index.is_monotonic:  # Some JSONs are damaged, so we need to sort them again
                 station_df.sort_index(inplace=True)
+            before_start = station_df[:(start_date - datetime.timedelta(minutes=1))]
+            if not before_start.empty and before_start.temperature.count() > 0:
+                logging.warning("Data found before start date")
+                logging.info(before_start.describe())
+            after_end = station_df[(end_date + datetime.timedelta(days=1, minutes=1)):]
+            if not after_end.empty or after_end.temperature.count() > 0:
+                logging.warning("Data found after end date")
+                logging.info(after_end.describe())
             station_df = station_df[start_date:end_date]
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' during provided time period".format(station=station))

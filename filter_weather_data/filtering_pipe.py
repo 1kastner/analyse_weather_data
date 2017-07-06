@@ -186,6 +186,12 @@ class FilterApplier:
         shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
         if not os.path.isfile(csv_path_shaded) or self.force_overwrite:
             save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_shaded)
+        if self.force_overwrite:
+            output_dir_for_summaries = os.path.join(
+                PROCESSED_DATA_DIR,
+                "filtered_station_summaries_of_shaded_stations"
+            )
+            save_station_dicts_as_time_span_summary(shaded_station_dicts, output_dir_for_summaries)
         return shaded_station_dicts
 
 
