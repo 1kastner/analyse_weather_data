@@ -57,12 +57,14 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
     station_unshaded = (r_value > CORRELATION_COEFFICIENT and p_value < P_VALUE)
 
     if station_unshaded:
-        logging.debug("station unshaded")
-        return True
+        logging.debug("station unshaded: r = {r}, p = {p}".format(r=r_value, p=p_value))
+        return False
     else:
         # Remove extreme values, level C2
-        station_df.loc[delta_df.temperature_delta > delta_df.temperature_std * 3] = numpy.nan
-        return False
+        extreme_delta_df = delta_df.loc[delta_df.temperature_delta > (delta_df.temperature_std * 3)]
+        if not extreme_delta_df.empty:
+            station_df.loc[extreme_delta_df.index.tolist()] = numpy.nan
+        return True
 
 
 def filter_stations(station_dicts, start_date, end_date, time_zone):

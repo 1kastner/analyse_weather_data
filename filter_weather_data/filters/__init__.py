@@ -75,6 +75,10 @@ class StationRepository:
         else:
             return self.stations_df
 
+    def get_meta_info(self, station):
+        stations_df = self.get_all_stations()
+        return stations_df.loc[station]
+
     def load_all_stations(self, start_date, end_date, time_zone, limit=0):
         """
         

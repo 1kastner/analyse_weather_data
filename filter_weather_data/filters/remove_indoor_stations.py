@@ -64,37 +64,22 @@ def check_station(station_df, reference_interval):
     :param reference_interval: Given a value pair (a, b) it says whether those two values are inside the interval
     :return: Is the station ok
     """
-    reference_df = reference_interval["reference_df"]
-    for year in reference_df.index.year.unique():
+    for year in station_df.index.year.unique():
         year_key = "{year}".format(year=year)
-        reference_year_df = reference_df.loc[year_key:year_key]
+        year_df = station_df.loc[year_key:year_key]
 
         minimum_temperatures_per_month = []
         daily_standard_deviation_per_month = []
-        for month in reference_year_df.index.month.unique():
+        for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
-            reference_month_df = reference_year_df.loc[month_key:month_key]
-            for day in reference_month_df.index.day.unique():
+            month_df = year_df.loc[month_key:month_key]
+            for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = station_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
-                if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
-                    minimum_temperatures_per_month.append(t_min)
+                minimum_temperatures_per_month.append(t_min)
                 t_std = day_df.temperature.std()
-                if not numpy.isnan(t_std):  # check here because NaNs propagate in the statistics module
-                    daily_standard_deviation_per_month.append(t_std)
-
-            if len(minimum_temperatures_per_month) == 0:
-                logging.debug(month_key)
-                logging.debug("not enough data for computing reliable statistics! Use the infrequent filter before!")
-                station_df.info()
-                return False
-            if len(daily_standard_deviation_per_month) == 0:
-                logging.debug(month_key)
-                logging.debug("not enough data for computing reliable statistics! Use the infrequent filter before!")
-                station_df.info()
-                return False
-
+                daily_standard_deviation_per_month.append(t_std)
             minimum_temperature_mean = statistics.mean(minimum_temperatures_per_month)
             temperature_standard_deviation = statistics.mean(daily_standard_deviation_per_month)
             if (minimum_temperature_mean, temperature_standard_deviation) not in reference_interval[month_key]:
@@ -119,13 +104,13 @@ def get_reference_interval(start_date, end_date, time_zone):
     daily_standard_deviation = []
     for year in reference_df.index.year.unique():
         year_key = str(year)
-        year_df = reference_df.loc[year_key]
+        year_df = reference_df.loc[year_key:year_key]
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
-            month_df = year_df.loc[month_key]
+            month_df = year_df.loc[month_key:month_key]
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
-                day_df = month_df.loc[day_key]
+                day_df = month_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
                 if not numpy.isnan(t_min):  # check here because NaNs propagate in the statistics module
                     minimum_temperatures_per_month.append(t_min)
@@ -144,7 +129,6 @@ def get_reference_interval(start_date, end_date, time_zone):
                 daily_standard_deviation_mean,
                 daily_standard_deviation_std * 5
             )
-    result["reference_df"] = reference_df
     return result
 
 

@@ -87,6 +87,7 @@ def show_mini_statistics(old_station_dicts, new_station_dicts):
     if len(new_station_dicts):
         logging.debug("example df")
         new_station_dicts[0]["data_frame"].info()
+    return filtered_stations
 
 
 class FilterApplier:
@@ -152,7 +153,7 @@ class FilterApplier:
                 PROCESSED_DATA_DIR,
                 "filtered_station_summaries_frequent"
             )
-            save_station_dicts_as_time_span_summary(station_dicts, output_dir_for_summaries)
+            save_station_dicts_as_time_span_summary(frequent_station_dicts, output_dir_for_summaries)
         return frequent_station_dicts
 
     def apply_not_indoor_filter(self, station_dicts):
@@ -188,6 +189,21 @@ class FilterApplier:
         return shaded_station_dicts
 
 
+def save_filtered_out_stations(name, stations):
+    output = os.path.join(
+        PROCESSED_DATA_DIR,
+        "removed_stations"
+    )
+    if not os.path.isdir(output):
+        os.mkdir(output)
+    csv_file = os.path.join(
+        output,
+        name + ".csv"
+    )
+    with open(csv_file, "w") as f:
+        f.write("\n".join([station for station in stations]))
+
+
 def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False,
              minimum=-100.0, maximum=+100.0):
 
@@ -206,28 +222,37 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
 
+    # START
+    logging.debug("position - empty")
+    no_rows_start = sum([station["data_frame"].temperature.count() for station in station_dicts])
+    logging.info("# start: " + str(no_rows_start))
+
     # EXTREME
     filter_applier.apply_extreme_record_filter(station_dicts, minimum, maximum)
 
     # POSITION
     with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(station_dicts, meta_info_df)
     logging.debug("position - empty")
-    show_mini_statistics(station_dicts, with_valid_position_station_dicts)
+    filtered_stations = show_mini_statistics(station_dicts, with_valid_position_station_dicts)
+    save_filtered_out_stations("wrong_position", filtered_stations)
 
     # INFREQUENT
     frequent_station_dicts = filter_applier.apply_infrequent_record_filter(with_valid_position_station_dicts)
     logging.debug("position - infrequent")
-    show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
+    filtered_stations = show_mini_statistics(with_valid_position_station_dicts, frequent_station_dicts)
+    save_filtered_out_stations("infrequent", filtered_stations)
 
     # INDOOR
     indoor_station_dicts = filter_applier.apply_not_indoor_filter(frequent_station_dicts)
     logging.debug("infrequent - indoor")
-    show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
+    filtered_stations = show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
+    save_filtered_out_stations("indoor", filtered_stations)
 
     # UNSHADED
     shaded_station_dicts = filter_applier.apply_unshaded_filter(indoor_station_dicts)
     logging.debug("indoor - shaded")
-    show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
+    filtered_stations = show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
+    save_filtered_out_stations("unshaded", filtered_stations)
 
 
 def demo():
