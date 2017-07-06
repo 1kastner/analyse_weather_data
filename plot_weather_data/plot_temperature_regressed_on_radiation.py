@@ -9,6 +9,7 @@ import numpy
 import pandas
 from matplotlib import pyplot
 
+from filter_weather_data.filters import GermanWinterTime
 from filter_weather_data.filters import PROCESSED_DATA_DIR
 from filter_weather_data.filters import StationRepository
 from filter_weather_data.filters import load_average_reference_values
@@ -26,21 +27,23 @@ def plot_station(station, start_date, end_date, time_zone):
     """
     summary_dir = os.path.join(
         PROCESSED_DATA_DIR,
-        "filtered_station_summaries_of_infrequent_stations"
+        "filtered_station_summaries_frequent"
     )
     outdoor_stations = os.path.join(
         PROCESSED_DATA_DIR,
         "filtered_stations",
-        "station_dicts_not_indoor.csv"
+        "station_dicts_outdoor.csv"
     )
     station_repository = StationRepository(outdoor_stations, summary_dir)
-    station_dict = station_repository.load_station(station, start_date, end_date, time_zone, minutely=True)
+    station_dict = station_repository.load_station(station, start_date, end_date)
     station_df = station_dict["data_frame"]
 
     reference_temperature_df = load_average_reference_values("temperature", time_zone)
+    reference_temperature_df = reference_temperature_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
     reference_temperature_df = reference_temperature_df[start_date:end_date]
 
     reference_radiation_df = load_average_reference_values("radiation", time_zone)
+    reference_radiation_df = reference_radiation_df .tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
     reference_radiation_df = reference_radiation_df[start_date:end_date]
 
     temp_df = station_df.join(reference_temperature_df, how='inner', rsuffix="_reference_temperature")
@@ -60,4 +63,4 @@ def plot_station(station, start_date, end_date, time_zone):
 
 
 if __name__ == "__main__":
-    plot_station("ISCHENEF11", "2016-07-01", "2016-08-31", "CET")
+    plot_station("IHAMBURG731", "2016-07-01", "2016-09-30", GermanWinterTime())

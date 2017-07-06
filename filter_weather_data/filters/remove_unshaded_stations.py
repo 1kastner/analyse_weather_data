@@ -61,11 +61,16 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
         return False
     else:
         # Remove extreme values, level C2
-        extreme_delta_df = delta_df.loc[delta_df.temperature_delta > (delta_df.temperature_std * 3)]
+        upper_limit = delta_df.temperature_reference_temperature + (delta_df.temperature_std * 3)
+        extreme_delta_df = delta_df.loc[delta_df.temperature > upper_limit]
         if not extreme_delta_df.empty:
-            print(extreme_delta_df.describe())
             station_df.loc[extreme_delta_df.index.tolist(), "temperature"] = numpy.nan
-            return not station_df.empty
+            if station_df.empty:
+                return False
+            elif station_df.temperature.count() == 0:
+                return False
+            else:
+                return True
         return True
 
 
