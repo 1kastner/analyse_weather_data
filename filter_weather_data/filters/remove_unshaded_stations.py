@@ -5,6 +5,7 @@ Run with '-m filter_weather_data.filters.remove_unshaded_stations' if you want t
 
 import logging
 
+import numpy
 import pandas
 import scipy.stats
 
@@ -31,7 +32,7 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
     :return: Is the station at a shaded place with high probability?
     """
 
-    temp_df = station_df.join(reference_temperature_df, how='inner', rsuffix="_reference_temperature")
+    temp_df = station_df.join(reference_temperature_df, how='left', rsuffix="_reference_temperature")
     delta_temperature = (temp_df.temperature_reference_temperature - temp_df.temperature).rename("temperature_delta")
     delta_df = pandas.concat([temp_df, delta_temperature], axis=1)
 
@@ -57,8 +58,11 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
 
     if station_unshaded:
         logging.debug("station unshaded")
-
-    return not station_unshaded
+        return True
+    else:
+        # Remove extreme values, level C2
+        station_df.loc[delta_df.temperature_delta > delta_df.temperature_std * 3] = numpy.nan
+        return False
 
 
 def filter_stations(station_dicts, start_date, end_date, time_zone):
@@ -91,7 +95,7 @@ def demo():
     stations = ['ISCHENEF11', 'IHAMBURG22']
     station_repository = StationRepository()
     station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
-                                                                                     time_zone, minutely=True)
+                                                                                     time_zone)
                                                      for station in stations])
     stations_with_data = filter_stations(station_dicts, start_date, end_date, time_zone)
     print([station_dict["name"] for station_dict in stations_with_data])

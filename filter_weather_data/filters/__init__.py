@@ -74,7 +74,7 @@ class StationRepository:
         else:
             return self.stations_df
 
-    def load_all_stations(self, start_date, end_date, time_zone, minutely, limit=0):
+    def load_all_stations(self, start_date, end_date, time_zone, limit=0):
         """
         
         :param start_date: The earliest day which must be included (potentially earlier)
@@ -83,8 +83,6 @@ class StationRepository:
         :type end_date: str | datetime.datetime
         :param time_zone: The time zone, e.g. 'CET'
         :type time_zone: datetime.tzinfo | str
-        :param minutely: Resample data frame minutely
-        :type minutely: bool
         :param limit: Limit to k stations to load
         :return: 
         """
@@ -97,7 +95,7 @@ class StationRepository:
                 k += 1
                 if k == limit + 1:
                     break
-            station_dict = self.load_station(station_name, start_date, end_date, time_zone, minutely)
+            station_dict = self.load_station(station_name, start_date, end_date, time_zone)
             if station_dict is not None:
                 station_dicts.append(station_dict)
                 logging.debug("load " + station_name)
@@ -107,7 +105,7 @@ class StationRepository:
         logging.debug("loaded station_dicts: " + str(len(station_dicts)))
         return station_dicts
 
-    def load_station(self, station, start_date, end_date, time_zone=None, minutely=False):
+    def load_station(self, station, start_date, end_date, time_zone=None):
         """
         This only looks at the dates and returns the corresponding summary (assuming naive dates, overlapping at 
         midnight is ignored).
@@ -119,8 +117,6 @@ class StationRepository:
         :type end_date: str | datetime.datetime
         :param time_zone: The time zone, e.g. 'CET'
         :type time_zone: datetime.tzinfo | str
-        :param minutely: Resample data frame minutely
-        :type minutely: bool
         :return: The searched data frame
         :rtype: ``pandas.DataFrame``
         """
@@ -133,7 +129,12 @@ class StationRepository:
             return None
         else:
             csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
-            station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+            station_df = pandas.read_csv(
+                csv_file,
+                usecols=["datetime", "temperature"],
+                index_col="datetime",
+                parse_dates=["datetime"]
+            )
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' at all".format(station=station))
                 return None
@@ -145,8 +146,6 @@ class StationRepository:
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
                 return None
-            if minutely:
-                station_df = self._create_minutely_data_frame(station_df, start_date, end_date, time_zone)
             meta_data = self._get_metadata(station)
             return {
                 "name": station,
@@ -190,14 +189,6 @@ class StationRepository:
                     searched_station_summary_file_name = station_summary_file_name + ".csv"
                     break
         return searched_station_summary_file_name
-
-    @staticmethod
-    def _create_minutely_data_frame(station_df, start_date, end_date, time_zone):
-        year_2016 = pandas.date_range(start_date, end_date, freq='T', name="datetime", time_zone=time_zone)
-        time_span_df = pandas.DataFrame(index=year_2016).tz_localize(None)
-        station_df = time_span_df.join([station_df])
-        station_df.fillna(method='ffill', inplace=True, limit=TEMPORAL_SPAN)
-        return station_df
 
     def _get_metadata(self, station):
         if self.stations_df is None:

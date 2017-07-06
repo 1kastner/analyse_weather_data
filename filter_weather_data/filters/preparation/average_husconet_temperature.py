@@ -23,6 +23,7 @@ def average_temperature_across_husconet_stations(force_overwrite=False):
         os.mkdir(working_dir)
     csv_output = os.path.join(working_dir, "husconet_average_temperature.csv")
     if os.path.isfile(csv_output) and not force_overwrite:
+        logging.debug("File already exists, skipping")
         return
 
     df = pandas.DataFrame()
@@ -32,10 +33,12 @@ def average_temperature_across_husconet_stations(force_overwrite=False):
         station_df = pandas.read_csv(csv_file, usecols=["temperature", "datetime"], index_col="datetime",
                                      parse_dates=["datetime"])
         df = df.join(station_df, how="outer", rsuffix="_" + station)
-    df = df.mean(axis=1).rename("temperature")
-    df.to_csv(csv_output, header=True)
+    average_temperature = df.mean(axis=1).rename("temperature")
+    standard_deviation_temperature = df.std(axis=1).rename("temperature_std")
+    df_2 = pandas.concat([average_temperature, standard_deviation_temperature], axis=1)
+    df_2.to_csv(csv_output, header=True)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    average_temperature_across_husconet_stations()
+    average_temperature_across_husconet_stations(True)

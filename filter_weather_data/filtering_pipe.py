@@ -178,13 +178,13 @@ class FilterApplier:
         :param station_dicts: The station dicts
         :return: Good stations
         """
-        csv_path_not_unshaded = os.path.join(
+        csv_path_shaded = os.path.join(
             self.output_dir,
             "station_dicts_shaded.csv"
         )
         shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
-        if not os.path.isfile(csv_path_not_unshaded) or self.force_overwrite:
-            save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_not_unshaded)
+        if not os.path.isfile(csv_path_shaded) or self.force_overwrite:
+            save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_shaded)
         return shaded_station_dicts
 
 
@@ -201,7 +201,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     prepare()
 
     station_repository = StationRepository(private_weather_stations_file_name)
-    station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone, True)
+    station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone)
     meta_info_df = station_repository.get_all_stations()
 
     filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
@@ -225,7 +225,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     show_mini_statistics(frequent_station_dicts, indoor_station_dicts)
 
     # UNSHADED
-    shaded_station_dicts = filter_applier.apply_infrequent_record_filter(indoor_station_dicts)
+    shaded_station_dicts = filter_applier.apply_unshaded_filter(indoor_station_dicts)
     logging.debug("indoor - shaded")
     show_mini_statistics(indoor_station_dicts, shaded_station_dicts)
 

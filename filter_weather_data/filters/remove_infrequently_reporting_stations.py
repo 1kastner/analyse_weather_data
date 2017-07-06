@@ -28,24 +28,22 @@ def check_station(station_dict):
     for year in station_df.index.year.unique():
         year_key = str(year)
         year_df = station_df.loc[year_key:year_key]  # avoids getting a series if a single entry exists
-        if year_df.temperature.count() == 0:
+        if year_df.empty or year_df.temperature.count() == 0:
             logging.debug(station_name + " is an empty data frame")
             return False
         for month in year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
             month_df = year_df.loc[month_key:month_key]  # avoids getting a series if a single entry exists
-            if isinstance(month_df, pandas.DataFrame) and month_df.temperature.count() < 22:  # obs for less than 22d
+            if month_df.empty or month_df.temperature.count() < 22:  # obs for less than 22d
                 logging.debug(month_key + " " + station_name + " got less than 22 entries - must be less than 80%")
                 return False
             for day in month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = month_df.loc[day_key:day_key]  # avoids getting a series if a single entry exists
-                if day_df.temperature.count() < 19:  # obs for less than 19h
-                    continue
-                if len(day_df.index.hour.unique()) < 19:  # less than 19h observations
+                if day_df.temperature.count() < 19 or len(day_df.index.hour.unique()) < 19:
                     station_df.loc[day_key].temperature = numpy.nan
             station_df.dropna(axis='index', how='any', subset=["temperature"], inplace=True)
-            eighty_percent_of_month = round(calendar.monthrange(year, month)[1] * .8)
+            eighty_percent_of_month = int(round(calendar.monthrange(year, month)[1] * .8))
             days_with_enough_reports = len(month_df.index.day.unique())
             if days_with_enough_reports <= eighty_percent_of_month:
                 logging.debug(month_key + " " + station_name + " only got " + str(days_with_enough_reports)
@@ -74,7 +72,7 @@ def demo():
     stations = ['IHAMBURG69', 'IBNNINGS2', 'IHAMBURG1795']
     station_repository = StationRepository()
     station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
-                                                                                     time_zone, minutely=True)
+                                                                                     time_zone)
                                                      for station in stations])
     stations_with_frequent_reports = filter_stations(station_dicts)
     print([station_dict["name"] for station_dict in stations_with_frequent_reports])

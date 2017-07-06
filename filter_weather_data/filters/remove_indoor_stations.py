@@ -64,16 +64,17 @@ def check_station(station_df, reference_interval):
     :param reference_interval: Given a value pair (a, b) it says whether those two values are inside the interval
     :return: Is the station ok
     """
-    for year in station_df.index.year.unique():
+    reference_df = reference_interval["reference_df"]
+    for year in reference_df.index.year.unique():
         year_key = "{year}".format(year=year)
-        year_df = station_df.loc[year_key:year_key]
+        reference_year_df = reference_df.loc[year_key:year_key]
 
         minimum_temperatures_per_month = []
         daily_standard_deviation_per_month = []
-        for month in year_df.index.month.unique():
+        for month in reference_year_df.index.month.unique():
             month_key = "{year}-{month}".format(year=year, month=month)
-            month_df = year_df.loc[month_key:month_key]
-            for day in month_df.index.day.unique():
+            reference_month_df = reference_year_df.loc[month_key:month_key]
+            for day in reference_month_df.index.day.unique():
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = station_df.loc[day_key:day_key]
                 t_min = day_df.temperature.min()
@@ -143,7 +144,7 @@ def get_reference_interval(start_date, end_date, time_zone):
                 daily_standard_deviation_mean,
                 daily_standard_deviation_std * 5
             )
-
+    result["reference_df"] = reference_df
     return result
 
 
