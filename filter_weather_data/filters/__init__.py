@@ -69,6 +69,7 @@ class StationRepository:
             else:
                 logging.debug("loading " + csv_file)
             self.stations_df = pandas.read_csv(csv_file, index_col="station")
+        logging.debug("Found stations: " + str(len(self.stations_df)))
         if limit:
             return self.stations_df.iloc[:limit]
         else:
@@ -88,13 +89,7 @@ class StationRepository:
         """
         station_dicts = []
         logging.debug("using summary dir: " + self.summary_dir)
-        if limit:
-            k = 0
-        for station_name, lat, lon in self.get_all_stations().itertuples():
-            if limit:
-                k += 1
-                if k == limit + 1:
-                    break
+        for station_name, lat, lon in self.get_all_stations(limit).itertuples():
             station_dict = self.load_station(station_name, start_date, end_date, time_zone)
             if station_dict is not None:
                 station_dicts.append(station_dict)
@@ -140,7 +135,7 @@ class StationRepository:
                 return None
             if time_zone is not None:
                 station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
-            if not station_df.index.is_monotonic:  # Some JSON are damaged, so we need to sort them again
+            if not station_df.index.is_monotonic:  # Some JSONs are damaged, so we need to sort them again
                 station_df.sort_index(inplace=True)
             station_df = station_df[start_date:end_date]
             if station_df.empty or station_df.temperature.count() == 0:

@@ -45,7 +45,7 @@ def check_station(station_dict):
             station_df.dropna(axis='index', how='any', subset=["temperature"], inplace=True)
             eighty_percent_of_month = int(round(calendar.monthrange(year, month)[1] * .8))
             days_with_enough_reports = len(month_df.index.day.unique())
-            if days_with_enough_reports <= eighty_percent_of_month:
+            if days_with_enough_reports < eighty_percent_of_month:
                 logging.debug(month_key + " " + station_name + " only got " + str(days_with_enough_reports)
                               + " but needed " + str(eighty_percent_of_month))
                 return False
