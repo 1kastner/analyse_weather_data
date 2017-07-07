@@ -19,25 +19,6 @@ PROCESSED_DATA_DIR = os.path.join(
 )
 
 
-# For how many minutes one (temperature) measurement is valid if no new measurement is given.
-TEMPORAL_SPAN = 30
-
-
-class GermanWinterTime(datetime.tzinfo):
-    """
-    The German winter time (no summer time)
-    """
-
-    def utcoffset(self, dt):
-        return datetime.timedelta(hours=1)
-
-    def tzname(self, dt):
-        return "GermanWinterTime"
-
-    def dst(self, dt):
-        return datetime.timedelta(0)
-
-
 class StationRepository:
 
     summary_dir = os.path.join(PROCESSED_DATA_DIR, "station_summaries")
@@ -69,7 +50,6 @@ class StationRepository:
             else:
                 logging.debug("loading " + csv_file)
             self.stations_df = pandas.read_csv(csv_file, index_col="station")
-        logging.debug("Found stations: " + str(len(self.stations_df)))
         if limit:
             return self.stations_df.iloc[:limit]
         else:
@@ -86,8 +66,8 @@ class StationRepository:
         :type start_date: str | datetime.datetime
         :param end_date: The latest day which must be included (potentially later)
         :type end_date: str | datetime.datetime
-        :param time_zone: The time zone, e.g. 'CET'
-        :type time_zone: datetime.tzinfo | str
+        :param time_zone: The time zone, e.g. 'CET' or GermanWinterTime() or None for naive datetime objects
+        :type time_zone: datetime.tzinfo | str | None
         :param limit: Limit to k stations to load
         :return: 
         """
@@ -114,8 +94,8 @@ class StationRepository:
         :type start_date: str | datetime.datetime
         :param end_date: The latest day which must be included (potentially later)
         :type end_date: str | datetime.datetime
-        :param time_zone: The time zone, e.g. 'CET'
-        :type time_zone: datetime.tzinfo | str
+        :param time_zone: The time zone, e.g. 'CET' or GermanWinterTime() or None for naive datetime interpretation
+        :type time_zone: datetime.tzinfo | str | None
         :return: The searched data frame
         :rtype: ``pandas.DataFrame``
         """
@@ -141,15 +121,21 @@ class StationRepository:
                 station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
             if not station_df.index.is_monotonic:  # Some JSONs are damaged, so we need to sort them again
                 station_df.sort_index(inplace=True)
-            before_start = station_df[:(start_date - datetime.timedelta(minutes=1))]
-            if not before_start.empty and before_start.temperature.count() > 0:
-                logging.warning("Data found before start date")
-                logging.info(before_start.describe())
-            after_end = station_df[(end_date + datetime.timedelta(days=1, minutes=1)):]
-            if not after_end.empty or after_end.temperature.count() > 0:
-                logging.warning("Data found after end date")
-                logging.info(after_end.describe())
-            station_df = station_df[start_date:end_date]
+            before_start_date = (start_date - datetime.timedelta(minutes=1))
+            before_start_df = station_df[:before_start_date]
+            if not before_start_df.empty and before_start_df.temperature.count() > 0:
+                logging.warning("Data found for {station} before start date '{before_start_date}'"
+                                .format(station=station, before_start_date=before_start_date))
+                logging.info(before_start_df.describe())
+                before_start_df.info()
+            after_end_date = (end_date + datetime.timedelta(days=1))
+            after_end_df = station_df[after_end_date:]
+            if not after_end_df.empty or after_end_df.temperature.count() > 0:
+                logging.warning("Data found for {station} after end date '{after_end_date}'"
+                                .format(station=station, after_end_date=after_end_date))
+                logging.info(after_end_df.describe())
+                after_end_df.info()
+            station_df = station_df[start_date:after_end_date]
             if station_df.empty or station_df.temperature.count() == 0:
                 logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
                 return None
@@ -202,16 +188,3 @@ class StationRepository:
             self.get_all_stations()
         return self.stations_df.loc[station]
 
-
-def load_average_reference_values(attribute, time_zone):
-    """
-    
-    :param attribute: 'temperature' or 'radiation'
-    :param time_zone: The time zone to use for the reference values, e.g. 'CET'
-    :return: Pandas data frame
-    """
-    reference_csv_path = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average_{attribute}.csv".format(
-        attribute=attribute))
-    reference_df = pandas.read_csv(reference_csv_path, index_col="datetime", parse_dates=["datetime"])
-    reference_df = reference_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
-    return reference_df

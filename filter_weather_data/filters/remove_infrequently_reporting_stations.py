@@ -7,9 +7,9 @@ The check removes entries when the reports were too infrequent.
 import logging
 import calendar
 
-import pandas
 import numpy
 
+from gather_weather_data.husconet import GermanWinterTime
 from . import StationRepository
 
 
@@ -25,6 +25,7 @@ def check_station(station_dict):
     """
     station_name = station_dict["name"]
     station_df = station_dict["data_frame"]
+    station_df.info()
     for year in station_df.index.year.unique():
         year_key = str(year)
         year_df = station_df.loc[year_key:year_key]  # avoids getting a series if a single entry exists
@@ -41,6 +42,7 @@ def check_station(station_dict):
                 day_key = "{year}-{month}-{day}".format(year=year, month=month, day=day)
                 day_df = month_df.loc[day_key:day_key]  # avoids getting a series if a single entry exists
                 if day_df.temperature.count() < 19 or len(day_df.index.hour.unique()) < 19:
+                    # logging.debug("remove {day_key}".format(day_key=day_key))
                     station_df.loc[day_key:day_key, "temperature"] = numpy.nan
             station_df.dropna(axis='index', how='any', subset=["temperature"], inplace=True)
             eighty_percent_of_month = int(round(calendar.monthrange(year, month)[1] * .8))
@@ -66,16 +68,26 @@ def filter_stations(station_dicts):
 
 
 def demo():
-    start_date = "2016-01-01T00:00:00+01:00"
-    end_date = "2016-12-31T00:00:00+01:00"
-    time_zone = "CET"
-    stations = ['IHAMBURG69', 'IBNNINGS2', 'IHAMBURG1795']
+    start_date = "2016-01-01T00:00:00"
+    end_date = "2016-12-31T00:00:00"
+    time_zone = GermanWinterTime()
+    stations = ['IHAMBURG42']  # , 'IBNNINGS2', 'IHAMBURG1795']
     station_repository = StationRepository()
-    station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
-                                                                                     time_zone)
-                                                     for station in stations])
+    station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone) for station in stations]
+    station_dicts = [station_dict for station_dict in station_dicts if station_dict is not None]
+    print()
+    print("Before filtering: ")
+    for station_dict in station_dicts:
+        print(station_dict["name"])
+        station_dict["data_frame"].info()
+        print(station_dict["data_frame"].describe())
     stations_with_frequent_reports = filter_stations(station_dicts)
-    print([station_dict["name"] for station_dict in stations_with_frequent_reports])
+    print()
+    print("After filtering: ")
+    for station_dict in stations_with_frequent_reports:
+        print(station_dict["name"])
+        station_dict["data_frame"].info()
+        print(station_dict["data_frame"].describe())
 
 
 if __name__ == "__main__":

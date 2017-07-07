@@ -8,9 +8,10 @@ if you want to see the demo.
 import os
 import logging
 
+from gather_weather_data.husconet import GermanWinterTime
+
 from .filters import PROCESSED_DATA_DIR
 from .filters import StationRepository
-from .filters import GermanWinterTime
 from .filters.preparation.average_husconet_radiation import average_solar_radiation_across_husconet_stations
 from .filters.preparation.average_husconet_temperature import average_temperature_across_husconet_stations
 from .filters.remove_wrongly_positioned_stations import filter_stations as filter_wrongly_positioned_stations
@@ -92,12 +93,11 @@ def show_mini_statistics(old_station_dicts, new_station_dicts):
 
 class FilterApplier:
 
-    def __init__(self, output_dir, force_overwrite, start_date, end_date, time_zone):
+    def __init__(self, output_dir, force_overwrite, start_date, end_date):
         self.output_dir = output_dir
         self.force_overwrite = force_overwrite
         self.start_date = start_date
         self.end_date = end_date
-        self.time_zone = time_zone
 
     def apply_extreme_record_filter(self, station_dicts, minimum, maximum):
         """
@@ -167,7 +167,7 @@ class FilterApplier:
             self.output_dir,
             "station_dicts_outdoor.csv"
         )
-        outdoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
+        outdoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date)
         if not os.path.isfile(csv_path_not_indoor) or self.force_overwrite:
             save_station_dicts_as_metadata_csv(outdoor_station_dicts, csv_path_not_indoor)
         return outdoor_station_dicts
@@ -183,7 +183,7 @@ class FilterApplier:
             self.output_dir,
             "station_dicts_shaded.csv"
         )
-        shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date, self.time_zone)
+        shaded_station_dicts = filter_unshaded_stations(station_dicts, self.start_date, self.end_date)
         if not os.path.isfile(csv_path_shaded) or self.force_overwrite:
             save_station_dicts_as_metadata_csv(shaded_station_dicts, csv_path_shaded)
         if self.force_overwrite:

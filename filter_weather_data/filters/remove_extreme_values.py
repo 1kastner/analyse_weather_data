@@ -58,7 +58,7 @@ def demo():
     stations = ['IHAMBURG69', 'IBNNINGS2', 'IHAMBURG1795']
     station_repository = StationRepository()
     station_dicts = filter(lambda x: x is not None, [station_repository.load_station(station, start_date, end_date,
-                                                                                     time_zone, minutely=True)
+                                                                                     time_zone)
                                                      for station in stations])
     stations_with_frequent_reports = filter_stations(station_dicts, -29.1 - 20, 37.3 + 20)
     print([station_dict["name"] for station_dict in stations_with_frequent_reports])

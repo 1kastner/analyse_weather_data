@@ -1,7 +1,11 @@
 """
 Summarize all downloaded private weather station data files.
 
-'-m gather_weather_data.wunderground.summarize_raw_data'
+Uses UTC time zone.
+
+Use
+-m gather_weather_data.wunderground.summarize_raw_data
+to run the demo
 """
 
 import os

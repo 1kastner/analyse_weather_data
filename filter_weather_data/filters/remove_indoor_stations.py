@@ -8,7 +8,8 @@ import statistics
 
 import numpy
 
-from . import load_average_reference_values
+from gather_weather_data.husconet import load_husconet_temperature_average
+from gather_weather_data.husconet import GermanWinterTime
 from . import StationRepository
 
 
@@ -98,15 +99,14 @@ def check_station(station_df, reference_interval):
     return True
 
 
-def get_reference_interval(start_date, end_date, time_zone):
+def get_reference_interval(start_date, end_date):
     """
     
     :param start_date: The first value to load (included)
     :param end_date: The last value to load (included)
-    :param time_zone: The time zone, e.g. 'CET'
     :return: This creates the norm whether the provided minimum temperature and daily deviation can be considered usual
     """
-    reference_df = load_average_reference_values("temperature", time_zone)
+    reference_df = load_husconet_temperature_average(start_date, end_date)
     reference_df = reference_df[start_date:end_date]
     result = {}
 
@@ -142,15 +142,14 @@ def get_reference_interval(start_date, end_date, time_zone):
     return result
 
 
-def filter_stations(station_dicts, start_date, end_date, time_zone):
+def filter_stations(station_dicts, start_date, end_date):
     """
 
     :param station_dicts: The station dicts
     :param start_date: The date to start (included) 
     :param end_date: The date to stop (included)
-    :param time_zone: The time zone
     """
-    reference_interval = get_reference_interval(start_date, end_date, time_zone)
+    reference_interval = get_reference_interval(start_date, end_date)
     filtered_stations = []
 
     for station_dict in station_dicts:
@@ -163,12 +162,12 @@ def filter_stations(station_dicts, start_date, end_date, time_zone):
 def demo():
     start_date = "2016-01-01T00:00:00+01:00"
     end_date = "2016-12-31T00:00:00+01:00"
-    time_zone = "CET"
+    time_zone = GermanWinterTime()
     stations = ['IHAMBURG69', 'IBNNINGS2']
     station_repository = StationRepository()
-    station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone=time_zone) for station
-                     in stations]
-    stations_inside_reference = filter_stations(station_dicts, start_date, end_date, time_zone)
+    station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone=time_zone)
+                     for station in stations]
+    stations_inside_reference = filter_stations(station_dicts, start_date, end_date)
     print([station_dict["name"] for station_dict in stations_inside_reference])
 
 

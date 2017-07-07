@@ -10,43 +10,39 @@ Depends on filter_weather_data.filters.preparation.average_husconet_temperature
 
 import os
 import logging
+import datetime
 
-import pandas
-import numpy
 from matplotlib import pyplot
 import matplotlib.lines as mlines
 import matplotlib.dates as mdates
 
-from filter_weather_data.filters import GermanWinterTime
+from gather_weather_data.husconet import GermanWinterTime
+from gather_weather_data.husconet import load_husconet_temperature_average
 from filter_weather_data.filters import StationRepository
 from filter_weather_data.filters import PROCESSED_DATA_DIR
 from . import insert_nans
 
 
-def plot_station(start_date, end_date, time_zone):
+def plot_station(title, weather_stations, summary_dir, start_date, end_date, time_zone):
     """
     Plots measured values in the foreground and the average of all HUSCONET weather stations in the background.
 
+    :param title: The window title
+    :type title: str
+    :param weather_stations: path to file with list of weather stations
+    :type weather_stations: str
+    :param summary_dir: directory with all necessary summaries, possibly pre-filtered
+    :type summary_dir: str
     :param start_date: The start date of the plot
+    :type start_date: str | datetime.datetime
     :param end_date: The end date of the plot
+    :type end_date: str | datetime.datetime
+    :param time_zone: The time zone to use for husconet stations
+    :type time_zone: datetime.tzinfo
     """
-    weather_stations = os.path.join(
-        PROCESSED_DATA_DIR,
-        "filtered_stations",
-        # "station_dicts_frequent.csv"  # (2)
-        # "station_dicts_outdoor.csv"  # (3)
-        "station_dicts_shaded.csv"  # (4)
-        # "station_dicts_with_valid_position.csv"  # (1)
-    )
-    summary_dir = os.path.join(
-        PROCESSED_DATA_DIR,
-        # "filtered_station_summaries_frequent"  # (2)
-        # "filtered_station_summaries_no_extreme_values"  # (1)
-        "filtered_station_summaries_of_shaded_stations"  # (3)
-        # "station_summaries"  # (0)
-    )
+
     fig = pyplot.figure()
-    fig.canvas.set_window_title(os.path.basename(weather_stations[:-4]) + " " + os.path.basename(summary_dir))
+    fig.canvas.set_window_title(title)
 
     station_repository = StationRepository(weather_stations, summary_dir)
     station_dicts = station_repository.load_all_stations(start_date, end_date)
@@ -57,21 +53,18 @@ def plot_station(start_date, end_date, time_zone):
         station_df.temperature.plot(kind='line', color='gray', alpha=.8)
 
     logging.debug("load husconet")
-    csv_file = os.path.join(PROCESSED_DATA_DIR, "husconet", "husconet_average_temperature.csv")
-    husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
-    husconet_station_df = husconet_station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
-    husconet_station_df = husconet_station_df[start_date:end_date]
+    husconet_station_df = load_husconet_temperature_average(start_date, end_date)
+
     logging.debug("start plotting")
-    husconet_station_df.temperature.plot(color="blue", alpha=0.2, label="Durchschnitt HUSCONET")
-    upper_line = (husconet_station_df.temperature + husconet_station_df.temperature_std * 3)
-    ax = upper_line.plot(color="green", alpha=0.4, label="Obergrenze HUSCONET")
+    ax = husconet_station_df.temperature.plot(color="blue", alpha=0.4, label="avg(Referenznetzwerk)")
+    # upper_line = (husconet_station_df.temperature + husconet_station_df.temperature_std * 3)
+    # ax = upper_line.plot(color="green", alpha=0.4, label="avg(HUSCONET) + 3 $\sigma$(HUSCONET)")
     ax.set_ylabel('Temperature in °C')
-    ax.set_xlabel('Zeit')
     pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m.%Y'))
 
     logging.debug("show plot")
     lines, labels = ax.get_legend_handles_labels()
-    gray_line = mlines.Line2D([], [], color='gray', label="Netatmo")
+    gray_line = mlines.Line2D([], [], color='gray', label="Crowdsourced")
     ax.legend(lines[len(station_dicts):] + [gray_line],
               labels[len(station_dicts):] + [gray_line.get_label()], loc='best')
     pyplot.show()
@@ -79,4 +72,35 @@ def plot_station(start_date, end_date, time_zone):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    plot_station("2016-01-01", "2016-12-31", GermanWinterTime())
+    filtered_stations_dir = os.path.join(
+        PROCESSED_DATA_DIR,
+        "filtered_stations"
+    )
+
+    # The different filter steps depend on the filtering_pipe script
+    # Be aware which filters only remove stations and which modify the data!
+    start = (
+        "valid position not extreme values",
+        os.path.join(filtered_stations_dir, "station_dicts_with_valid_position.csv"),
+        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_no_extreme_values")
+    )
+    frequent_reports = (
+        "frequent reports",
+        os.path.join(filtered_stations_dir, "station_dicts_frequent.csv"),
+        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_frequent")
+    )
+    only_outdoor = (
+        "only outdoor",
+        os.path.join(filtered_stations_dir, "station_dicts_outdoor.csv"),
+        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_frequent")
+    )
+    only_outdoor_and_shaded = (
+        "only outdoor and shaded",
+        os.path.join(filtered_stations_dir, "station_dicts_shaded.csv"),
+        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_of_shaded_stations")
+    )
+
+    plot_station(*start, "2016-01-01", "2016-12-31", GermanWinterTime())
+    plot_station(*frequent_reports, "2016-01-01", "2016-12-31", GermanWinterTime())
+    plot_station(*only_outdoor, "2016-01-01", "2016-12-31", GermanWinterTime())
+    plot_station(*only_outdoor_and_shaded, "2016-01-01", "2016-12-31", GermanWinterTime())
