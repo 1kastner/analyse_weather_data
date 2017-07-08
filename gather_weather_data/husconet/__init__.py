@@ -73,16 +73,16 @@ def load_husconet_radiation_average(start_date, end_date):
     return load_husconet_file(csv_file, start_date, end_date)
 
 
-def load_husconet_station(husconet_station_name, start_date=None, end_date=None):
+def load_husconet_station(husconet_station_name, start_date=None, end_date=None, attribute_to_load=None):
     csv_file = os.path.join(
         PROCESSED_DATA_DIR,
         "husconet",
         husconet_station_name + ".csv"
     )
-    return load_husconet_file(csv_file, start_date, end_date)
+    return load_husconet_file(csv_file, start_date, end_date, attribute_to_load=attribute_to_load)
 
 
-def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_check=None):
+def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_check=None, attribute_to_load=None):
     """
 
     :param start_date: The start date
@@ -101,7 +101,15 @@ def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_ch
     if isinstance(end_date, str):
         end_date = dateutil.parser.parse(end_date)
 
-    husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+    if attribute_to_load is None:
+        husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
+    else:
+        husconet_station_df = pandas.read_csv(
+            csv_file,
+            usecols=["datetime", attribute_to_load],
+            index_col="datetime",
+            parse_dates=["datetime"]
+        )
     husconet_station_df = husconet_station_df.tz_localize("UTC").tz_convert(GermanWinterTime()).tz_localize(None)
 
     if start_date is not None:

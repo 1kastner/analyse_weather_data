@@ -30,6 +30,8 @@ def plot_station(station, start_date, end_date):
     station_df.temperature.plot(label=station)
     logging.debug("plotting {station} from {start} to {end}"
                   .format(station=station, start=station_df.index.min(), end=station_df.index.max()))
+    station_df.info()
+    print(station_df.index)
 
     husconet_station_df = load_husconet_temperature_average(start_date, end_date)
     ax = husconet_station_df.temperature.plot(alpha=0.3, label="Referenznetzwerk")
@@ -46,4 +48,4 @@ def plot_station(station, start_date, end_date):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     plot_station("IHAMBURG69", "2016-01-01", "2016-01-31")
-    plot_station("ISCHENEF11", "2016-07-01", "2016-07-31")
+    #plot_station("ISCHENEF11", "2016-07-01", "2016-07-31")

@@ -12,21 +12,24 @@ from gather_weather_data.husconet import load_husconet_station
 
 def plot_stations():
     """
-    Plots all HUSCONET weather stations in the background.
+    Plots all HUSCONET weather stations
     """
 
-    for station_name in HUSCONET_STATIONS[:1]:
-        station_df = load_husconet_station(station_name, "2016-01-01", "2016-01-08")
-        station_df.info()
+    fig, ax = pyplot.subplots()
+
+    for station_name in HUSCONET_STATIONS:
+        station_df = load_husconet_station(station_name, "2016-01-01", "2016-12-31", "temperature")
         logging.debug("plotting {station} from {start} to {end}"
                       .format(station=station_name, start=station_df.index.min(), end=station_df.index.max()))
-        ax = station_df.temperature.plot(label=station_name, alpha=.2)
+        pyplot.plot(station_df.index, station_df.temperature, label=station_name, alpha=.2)
 
     logging.debug("start plotting")
 
     ax.set_ylabel('Temperature in °C')
     ax.set_xlabel('')
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M'))
+    ax.margins(x=0)
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m'))
     pyplot.legend()
     pyplot.show()
 

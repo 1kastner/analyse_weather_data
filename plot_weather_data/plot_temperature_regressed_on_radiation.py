@@ -53,7 +53,7 @@ def plot_station(station, start_date, end_date):
     Y = df_only_sunshine.temperature_reference_temperature
 
     fig = pyplot.figure()
-    fig.canvas.set_window_title(station)
+    fig.canvas.set_window_title(station + "temperature regressed on radiation")
 
     pyplot.scatter(X, Y, marker="x", color="gray")
     pyplot.plot(X, numpy.poly1d(numpy.polyfit(X, Y, 1))(X), color="blue", alpha=.8, label=station)
@@ -64,4 +64,9 @@ def plot_station(station, start_date, end_date):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    plot_station("IHAMBURG731", "2016-07-01", "2016-09-30")
+    good_examples = ['IHAMBURG638', 'IHAMBURG32', 'IHAMBURG1789', 'IHAMBURG1308', 'IHAMBURG269', 'IHAMBURG851',
+                     'IHAMBURG57', 'IHAMBURG360', 'INORDERS2', 'IHAMBURG847', 'IHAMBURG1389', 'IHAMBURG723',
+                     'IHAMBURG1028', 'IHHSCHNE3', 'IHAMBURG373', 'IHAMBURG1088', 'IHAMBURG423', 'IHAMBURG452',
+                     'IHAMBURG1799', 'IHAMBURG1074']
+
+    plot_station('IHAMBURG1074', "2016-07-01", "2016-09-30")
