@@ -25,7 +25,6 @@ def check_station(station_dict):
     """
     station_name = station_dict["name"]
     station_df = station_dict["data_frame"]
-    station_df.info()
     for year in station_df.index.year.unique():
         year_key = str(year)
         year_df = station_df.loc[year_key:year_key]  # avoids getting a series if a single entry exists

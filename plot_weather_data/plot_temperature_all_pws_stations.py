@@ -69,8 +69,7 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     pyplot.show()
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+def plot_whole_filtering_pipe():
     filtered_stations_dir = os.path.join(
         PROCESSED_DATA_DIR,
         "filtered_stations"
@@ -104,3 +103,8 @@ if __name__ == "__main__":
     plot_station(*frequent_reports, start_date, end_date)
     plot_station(*only_outdoor, start_date, end_date)
     plot_station(*only_outdoor_and_shaded, start_date, end_date)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    plot_whole_filtering_pipe()

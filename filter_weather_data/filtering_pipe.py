@@ -226,7 +226,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone)
     meta_info_df = station_repository.get_all_stations()
 
-    filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date, time_zone)
+    filter_applier = FilterApplier(output_dir, force_overwrite, start_date, end_date)
 
     # START
     logging.debug("position - empty")
@@ -262,8 +262,8 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
 
 
 def demo():
-    start_date = "2016-01-01T00:00:00+01:00"
-    end_date = "2016-12-31T00:00:00+01:00"
+    start_date = "2016-01-01T00:00:00"
+    end_date = "2016-12-31T00:00:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
     time_zone = GermanWinterTime()
     hamburg_minimum = -29.1 - 20  # -29.1°C is the record, 20 degrees additionally for free

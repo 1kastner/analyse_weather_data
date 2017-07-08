@@ -23,7 +23,7 @@ def average_temperature_across_husconet_stations(force_overwrite=False):
         os.mkdir(working_dir)
     csv_output = os.path.join(working_dir, "husconet_average_temperature.csv")
     if os.path.isfile(csv_output) and not force_overwrite:
-        logging.debug("File already exists, skipping")
+        logging.debug("husconet average temperature file already exists, skipping")
         return
 
     df = pandas.DataFrame()

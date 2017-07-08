@@ -22,8 +22,12 @@ def check_station(station_dict, minimum, maximum):
     """
     station_df = station_dict["data_frame"]
 
-    logging.debug(station_df.loc[station_df.temperature < minimum].describe())
-    logging.debug(station_df.loc[station_df.temperature > maximum].describe())
+    smaller_than_minimum = station_df.loc[station_df.temperature < minimum]
+    if not smaller_than_minimum.empty:
+        logging.debug(smaller_than_minimum.describe())
+    larger_than_maximum = station_df.loc[station_df.temperature > maximum]
+    if not larger_than_maximum.empty:
+        logging.debug(larger_than_maximum.describe())
 
     station_df.loc[station_df.temperature < minimum] = numpy.nan
     station_df.loc[station_df.temperature > maximum] = numpy.nan

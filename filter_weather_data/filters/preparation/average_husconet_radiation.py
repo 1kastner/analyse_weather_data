@@ -23,6 +23,7 @@ def average_solar_radiation_across_husconet_stations(force_overwrite=False):
         os.mkdir(working_dir)
     csv_output = os.path.join(working_dir, "husconet_average_radiation.csv")
     if os.path.isfile(csv_output) and not force_overwrite:
+        logging.debug("husconet average radiation file already exists, skipping")
         return
 
     df = pandas.DataFrame()
