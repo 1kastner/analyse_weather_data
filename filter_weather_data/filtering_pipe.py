@@ -99,14 +99,15 @@ class FilterApplier:
         self.start_date = start_date
         self.end_date = end_date
 
-    def apply_extreme_record_filter(self, station_dicts):
+    def apply_extreme_record_filter(self, station_dicts, minimum_temperature):
         """
-        Remove extreme values.
+        Remove extreme low values.
 
         :param station_dicts: The station dicts
+        :param minimum_temperature: Not below this temperature
         :return: Good stations
         """
-        filter_extreme_values(station_dicts)
+        filter_extreme_values(station_dicts, minimum_temperature)
         if self.force_overwrite:
             output_dir_for_summaries = os.path.join(
                 PROCESSED_DATA_DIR,
@@ -208,8 +209,8 @@ def save_filtered_out_stations(name, stations):
         f.write("\n".join([station for station in stations]))
 
 
-def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, force_overwrite=False,
-             minimum=-100.0, maximum=+100.0):
+def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, minimum_temperature,
+             force_overwrite=False):
 
     output_dir = os.path.join(
         PROCESSED_DATA_DIR,
@@ -232,7 +233,7 @@ def run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone
     logging.info("# start: " + str(no_rows_start))
 
     # EXTREME
-    filter_applier.apply_extreme_record_filter(station_dicts, minimum, maximum)
+    filter_applier.apply_extreme_record_filter(station_dicts, minimum_temperature)
 
     # POSITION
     with_valid_position_station_dicts = filter_applier.apply_invalid_position_filter(station_dicts, meta_info_df)
@@ -263,11 +264,9 @@ def demo():
     start_date = "2016-01-01T00:00:00"
     end_date = "2016-12-31T00:00:00"
     private_weather_stations_file_name = "private_weather_stations.csv"
+    minimum_temperature = -32.1  # valid for Hamburg: -27.1 - 3 tolerance
     time_zone = GermanWinterTime()
-    hamburg_minimum = -29.1 - 20  # -29.1°C is the record, 20 degrees additionally for free
-    hamburg_maximum = 37.3 + 40  # 37.3°C is the record, 40 degrees additionally for free (don't remove direct sunlight)
-    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, True, hamburg_minimum,
-             hamburg_maximum)
+    run_pipe(private_weather_stations_file_name, start_date, end_date, time_zone, minimum_temperature, True)
 
 
 if __name__ == "__main__":
