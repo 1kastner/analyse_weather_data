@@ -27,14 +27,23 @@ class StationRepository:
 
     cached_os_list_dir = None
 
-    def __init__(self, private_weather_stations_file_name="private_weather_stations.csv", summary_dir=None):
+    def __init__(self, private_weather_stations_file_name=None, summary_dir=None):
         """
         
         :param private_weather_stations_file_name: Where to look up the station metadata
         """
+        if private_weather_stations_file_name is None:
+            private_weather_stations_file_name = os.path.join(
+                PROCESSED_DATA_DIR,
+                "private_weather_stations.csv"
+            )
+        if summary_dir is None:
+            summary_dir = os.path.join(
+                PROCESSED_DATA_DIR,
+                "station_summaries"
+            )
         self.private_weather_stations_file_name = private_weather_stations_file_name
-        if summary_dir is not None:
-            self.summary_dir = summary_dir
+        self.summary_dir = summary_dir
         self.cached_os_list_dir = os.listdir(self.summary_dir)
 
     def get_all_stations(self, limit=0):
@@ -106,50 +115,49 @@ class StationRepository:
                 station=station, start_date=start_date.strftime("%Y-%m-%d"), end_date=end_date.strftime("%Y-%m-%d")
             ))
             return None
-        else:
-            csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
-            station_df = pandas.read_csv(
-                csv_file,
-                usecols=["datetime", "temperature"],
-                index_col="datetime",
-                parse_dates=["datetime"]
-            )
-            if station_df.empty or station_df.temperature.count() == 0:
-                logging.debug("Not enough data for '{station}' at all".format(station=station))
-                return None
-            if time_zone is not None:
-                station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
-            if not station_df.index.is_monotonic:  # Some JSONs are damaged, so we need to sort them again
-                station_df.sort_index(inplace=True)
-            before_start_date = (start_date - datetime.timedelta(minutes=1))
-            before_start_df = station_df[:before_start_date]
-            if not before_start_df.empty and before_start_df.temperature.count() > 0:
-                logging.warning("Data found for {station} before start date '{before_start_date}'"
-                                .format(station=station, before_start_date=before_start_date))
-                logging.info(before_start_df.describe())
-                before_start_df.info()
-            after_end_date = (end_date + datetime.timedelta(days=1))
-            after_end_df = station_df[after_end_date:]
-            if not after_end_df.empty or after_end_df.temperature.count() > 0:
-                logging.warning("Data found for {station} after end date '{after_end_date}'"
-                                .format(station=station, after_end_date=after_end_date))
-                logging.info(after_end_df.describe())
-                after_end_df.info()
-            station_df = station_df[start_date:after_end_date]
-            if station_df.empty or station_df.temperature.count() == 0:
-                logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
-                return None
-            meta_data = self._get_metadata(station)
-            return {
-                "name": station,
-                "data_frame": station_df,
-                "meta_data": {
-                    "position": {
-                        "lat": meta_data.lat,
-                        "lon": meta_data.lon
-                    }
+        csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
+        station_df = pandas.read_csv(
+            csv_file,
+            usecols=["datetime", "temperature"],
+            index_col="datetime",
+            parse_dates=["datetime"]
+        )
+        if station_df.empty or station_df.temperature.count() == 0:
+            logging.debug("Not enough data for '{station}' at all".format(station=station))
+            return None
+        if time_zone is not None:
+            station_df = station_df.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
+        if not station_df.index.is_monotonic:  # Some JSONs are damaged, so we need to sort them again
+            station_df.sort_index(inplace=True)
+        before_start_date = (start_date - datetime.timedelta(minutes=1))
+        before_start_df = station_df[:before_start_date]
+        if not before_start_df.empty and before_start_df.temperature.count() > 0:
+            logging.warning("Data found for {station} before start date '{before_start_date}'"
+                            .format(station=station, before_start_date=before_start_date))
+            logging.info(before_start_df.describe())
+            before_start_df.info()
+        after_end_date = (end_date + datetime.timedelta(days=1))
+        after_end_df = station_df[after_end_date:]
+        if not after_end_df.empty or after_end_df.temperature.count() > 0:
+            logging.warning("Data found for {station} after end date '{after_end_date}'"
+                            .format(station=station, after_end_date=after_end_date))
+            logging.info(after_end_df.describe())
+            after_end_df.info()
+        station_df = station_df[start_date:after_end_date]
+        if station_df.empty or station_df.temperature.count() == 0:
+            logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
+            return None
+        meta_data = self._get_metadata(station)
+        return {
+            "name": station,
+            "data_frame": station_df,
+            "meta_data": {
+                "position": {
+                    "lat": meta_data.lat,
+                    "lon": meta_data.lon
                 }
             }
+        }
 
     @staticmethod
     def _cast_date(start_date, end_date):
@@ -175,9 +183,10 @@ class StationRepository:
                 station_part, start_date_span_text, end_date_span_text = file_name_parts
                 if station_part != station:
                     continue
-                start_date_span = datetime.datetime.strptime(start_date_span_text, "%Y%m%d").replace(
-                    tzinfo=start_date.tzinfo)
-                end_date_span = datetime.datetime.strptime(end_date_span_text, "%Y%m%d").replace(tzinfo=end_date.tzinfo)
+                start_date_span = datetime.datetime.strptime(start_date_span_text, "%Y%m%d")
+                start_date_span = start_date_span.replace(tzinfo=start_date.tzinfo)
+                end_date_span = datetime.datetime.strptime(end_date_span_text, "%Y%m%d")
+                end_date_span = end_date_span.replace(tzinfo=end_date.tzinfo)
                 if start_date_span <= start_date and end_date_span >= end_date:
                     searched_station_summary_file_name = station_summary_file_name + ".csv"
                     break

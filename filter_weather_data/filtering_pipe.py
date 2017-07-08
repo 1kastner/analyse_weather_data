@@ -99,16 +99,14 @@ class FilterApplier:
         self.start_date = start_date
         self.end_date = end_date
 
-    def apply_extreme_record_filter(self, station_dicts, minimum, maximum):
+    def apply_extreme_record_filter(self, station_dicts):
         """
         Remove extreme values.
 
-        :param minimum: Filter out anything below this minimum
-        :param maximum: Filter out anything above this maximum
         :param station_dicts: The station dicts
         :return: Good stations
         """
-        filter_extreme_values(station_dicts, minimum, maximum)
+        filter_extreme_values(station_dicts)
         if self.force_overwrite:
             output_dir_for_summaries = os.path.join(
                 PROCESSED_DATA_DIR,

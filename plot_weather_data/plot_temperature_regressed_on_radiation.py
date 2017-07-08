@@ -57,7 +57,7 @@ def plot_station(station, start_date, end_date):
 
     pyplot.scatter(X, Y, marker="x", color="gray")
     pyplot.plot(X, numpy.poly1d(numpy.polyfit(X, Y, 1))(X), color="blue", alpha=.8, label=station)
-    pyplot.gca().set_ylabel(r'Globale Wärmestrahlung ($\frac{W}{m^2}$)')
+    pyplot.gca().set_ylabel(r'Globalstrahlung ($\frac{W}{m^2}$)')
     pyplot.gca().set_xlabel('Temperaturdifferenz Crowdsourced - Referenznetzwerk (in °C)')
     pyplot.show()
 
