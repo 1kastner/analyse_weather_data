@@ -53,8 +53,8 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     husconet_station_df = load_husconet_temperature_average(start_date, end_date)
 
     logging.debug("start plotting")
-    pyplot.plot(husconet_station_df.index, husconet_station_df.temperature, color="blue", alpha=0.4,
-                label="avg(Referenznetzwerk)")
+    pyplot.plot(husconet_station_df.index, husconet_station_df.temperature, color="blue",
+                label="Referenznetzwerk")
     # upper_line = (husconet_station_df.temperature + husconet_station_df.temperature_std * 3)
     # ax = upper_line.plot(color="green", alpha=0.4, label="avg(HUSCONET) + 3 $\sigma$(HUSCONET)")
 
