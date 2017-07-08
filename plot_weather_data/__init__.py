@@ -3,10 +3,11 @@
 """
 
 import os
-import logging
 
-import numpy
 import pandas
+from matplotlib import pyplot
+from matplotlib import dates as mdates
+import matplotlib.ticker as ticker
 
 PROCESSED_DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -27,3 +28,13 @@ def insert_nans(station_df):
     )
 
     return station_df.join(reference_df, how="outer")
+
+
+def style_year_2016_plot(ax):
+    ax.set_ylabel('Temperature in °C')
+    ax.set_xlabel('2016')
+    ax.margins(x=0)
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(5))  # draw line every 5 °C
+    pyplot.grid(color='.9')  # a very light gray
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m'))

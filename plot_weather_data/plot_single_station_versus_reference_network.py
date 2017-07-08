@@ -11,6 +11,7 @@ from filter_weather_data.filters import StationRepository
 from gather_weather_data.husconet import GermanWinterTime
 from gather_weather_data.husconet import load_husconet_temperature_average
 from . import insert_nans
+from . import style_year_2016_plot
 
 
 def plot_station(station, start_date, end_date):
@@ -27,20 +28,16 @@ def plot_station(station, start_date, end_date):
     station_dict = station_repository.load_station(station, start_date, end_date, GermanWinterTime())
     station_df = station_dict['data_frame']
     station_df = insert_nans(station_df)
-    station_df.temperature.plot(label=station)
+    pyplot.plot(station_df.index, station_df.temperature, label=station)
     logging.debug("plotting {station} from {start} to {end}"
                   .format(station=station, start=station_df.index.min(), end=station_df.index.max()))
-    station_df.info()
-    print(station_df.index)
 
     husconet_station_df = load_husconet_temperature_average(start_date, end_date)
-    ax = husconet_station_df.temperature.plot(alpha=0.3, label="Referenznetzwerk")
+    pyplot.plot(husconet_station_df.index, husconet_station_df.temperature, alpha=0.3, label="Referenznetzwerk")
     logging.debug("plotting HUSCONET from {start} to {end}"
                   .format(start=station_df.index.min(), end=station_df.index.max()))
 
-    ax.set_xlabel('')
-    ax.set_ylabel('Temperature in °C')
-    pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M'))
+    style_year_2016_plot(pyplot.gca())
     pyplot.legend()
     pyplot.show()
 
