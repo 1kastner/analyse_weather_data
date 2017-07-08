@@ -93,6 +93,8 @@ def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_ch
     :type csv_file: str
     :param attribute_to_check: Check whether this attribute is 0, more reliable than the '.empty' property
     :type attribute_to_check: str | None
+    :param attribute_to_load: Load only a single attribute from the csv
+    :type attribute_to_load: str | None
     :return: The loaded data frame within the time span
     :rtype: ``pandas.DataFrame``
     """
@@ -100,6 +102,13 @@ def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_ch
         start_date = dateutil.parser.parse(start_date)
     if isinstance(end_date, str):
         end_date = dateutil.parser.parse(end_date)
+
+    if not hasattr(load_husconet_file, "cache"):
+        load_husconet_file.cache = {}
+    key = (csv_file + "s" + repr(start_date) + "e" + repr(end_date) + "a" + repr(attribute_to_check)
+           + "l" + repr(attribute_to_load))
+    if key in load_husconet_file.cache:
+        return load_husconet_file.cache[key]
 
     if attribute_to_load is None:
         husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
@@ -137,4 +146,5 @@ def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_ch
             after_end_df.info()
         husconet_station_df = husconet_station_df[:after_end_date]
 
+    load_husconet_file.cache[key] = husconet_station_df.copy()
     return husconet_station_df
