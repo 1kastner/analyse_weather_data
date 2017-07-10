@@ -7,17 +7,24 @@ import os
 import pandas
 
 
-WUNDERGROUND_RAW_DATA_DIR = os.path.join(
+PROJECT_ROOT_DIR = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         os.pardir,
-        os.pardir,
+        os.pardir
+)
+
+WUNDERGROUND_RAW_DATA_DIR = os.path.join(
+        PROJECT_ROOT_DIR,
         "wunderground_raw_data"
 )
 
+WUNDERGROUND_RAW_AIRPORT_DATA_DIR = os.path.join(
+        PROJECT_ROOT_DIR,
+        "wunderground_raw_airport_data"
+)
+
 PROCESSED_DATA_DIR = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        os.pardir,
-        os.pardir,
+        PROJECT_ROOT_DIR,
         "processed_data"
 )
 

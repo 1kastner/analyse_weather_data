@@ -133,19 +133,22 @@ class StationRepository:
             before_start_date = (start_date - datetime.timedelta(minutes=1))
             before_start_df = station_df[:before_start_date]
             if not before_start_df.empty and before_start_df.temperature.count() > 0:
-                logging.warning("Data found for {station} before start date '{before_start_date}'"
-                                .format(station=station, before_start_date=before_start_date))
-                logging.info(before_start_df.describe())
-                before_start_df.info()
+                pass
+
+                # logging.warning("Data found for {station} before start date '{before_start_date}'"
+                #                .format(station=station, before_start_date=before_start_date))
+                # logging.info(before_start_df.describe())
+                # before_start_df.info()
             station_df = station_df[start_date:]
         if end_date is not None:
             after_end_date = (end_date + datetime.timedelta(days=1))
             after_end_df = station_df[after_end_date:]
             if not after_end_df.empty or after_end_df.temperature.count() > 0:
-                logging.warning("Data found for {station} after end date '{after_end_date}'"
-                                .format(station=station, after_end_date=after_end_date))
-                logging.info(after_end_df.describe())
-                after_end_df.info()
+                pass
+                # logging.warning("Data found for {station} after end date '{after_end_date}'"
+                #                .format(station=station, after_end_date=after_end_date))
+                # logging.info(after_end_df.describe())
+                # after_end_df.info()
             station_df = station_df[:after_end_date]
         if station_df.empty or station_df.temperature.count() == 0:
             logging.debug("Not enough data for '{station}' during provided time period".format(station=station))
@@ -205,4 +208,3 @@ class StationRepository:
         if self.stations_df is None:
             self.get_all_stations()
         return self.stations_df.loc[station]
-

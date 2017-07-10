@@ -3,15 +3,18 @@
 
 import os
 
+PROJECT_ROOT_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    os.pardir
+)
+
 WUNDERGROUND_RAW_DATA_DIR = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        os.pardir,
-        "wunderground_raw_data"
+    PROJECT_ROOT_DIR,
+    "wunderground_raw_data"
 )
 
 PROCESSED_DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    os.pardir,
+    PROJECT_ROOT_DIR,
     "processed_data"
 )
 

@@ -31,24 +31,25 @@ def get_square_error_calculator(t_actual):
     return calculate_square_error
 
 
-def get_interpolation_result(temperature_distance_tuples, t_actual):
+def get_interpolation_result(temperature_distance_tuples, t_actual, postfix=""):
     """
     
     :param temperature_distance_tuples: List of temperature and distance pairs
     :param t_actual: The actual temperature
+    :param postfix: The postfix for different methods if needed
     :return: Several simplistic measurements.
     :rtype: dict
     """
+    if not temperature_distance_tuples:  # No neighbours could be found
+        return {}
     temperatures, distances = zip(*temperature_distance_tuples)
-    print("temperatures: ", temperatures)
-    print("distances: ", distances)
     calculate_square_error = get_square_error_calculator(t_actual)
     result = {
-        "idw_p2": calculate_square_error(inverted_distance_weight(temperatures, distances, 2)),
-        "idw_p3": calculate_square_error(inverted_distance_weight(temperatures, distances, 3)),
-        "max": calculate_square_error(max(temperatures)),
-        "median": calculate_square_error(statistics.median(temperatures)),
-        "min": calculate_square_error(min(temperatures))
+        "idw_p2" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 2)),
+        "idw_p3" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 3)),
+        "max" + postfix: calculate_square_error(max(temperatures)),
+        "median" + postfix: calculate_square_error(statistics.median(temperatures)),
+        "min" + postfix: calculate_square_error(min(temperatures))
     }
 
     return result

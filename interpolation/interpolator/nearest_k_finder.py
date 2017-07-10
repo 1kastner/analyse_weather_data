@@ -17,11 +17,11 @@ class NearestKFinder(AbstractNeighbourFinder):
         self._sorted_station_dicts = station_dicts[:]
         self.last_target = None
 
-        logging.debug("start resampling")
+        # logging.debug("start resampling for k nearest")
         self.station_dict_at_position = {}
         for station_dict in station_dicts:
             self._sample_up(station_dict, start_date, end_date)
-        logging.debug("end resampling")
+        # logging.debug("end resampling for k nearest")
 
     def _sort_for_target(self, station_dict):
         position = station_dict["meta_data"]["position"]
@@ -37,11 +37,11 @@ class NearestKFinder(AbstractNeighbourFinder):
             station_dict["_interpolation__distance"] = distance
         self._sorted_station_dicts.sort(key=lambda station_dict: station_dict["_interpolation__distance"])
 
-    def find_k_nearest_neighbours(self, station_dict, t, k):
+    def find_k_nearest_neighbours(self, station_dict, date, k):
         """
         
         :param station_dict: The station to look for
-        :param t: The time point t (pandas compatible)
+        :param date: The time point (pandas compatible)
         :param k: The number of neighbours
         :return: List of closest temperatures and distances
         """
@@ -51,7 +51,7 @@ class NearestKFinder(AbstractNeighbourFinder):
         neighbours = []
         found = 0
         for station_dict in self._sorted_station_dicts:
-            temperature_at_time_t = station_dict["data_frame"].loc[t].temperature
+            temperature_at_time_t = station_dict["data_frame"].loc[date].temperature
             if numpy.isnan(temperature_at_time_t):  # station not available
                 continue
             else:
