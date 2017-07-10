@@ -25,7 +25,7 @@ class DelaunayTriangulator(AbstractNeighbourFinder):
         for station_dict in station_dicts:
             position = station_dict["meta_data"]["position"]
             self.station_dict_at_position[(position["lat"], position["lon"])] = station_dict
-            self._sample_up(station_dict, start_date, end_date)
+            self.sample_up(station_dict, start_date, end_date)
 
         # logging.debug("end resampling for delaunay")
 

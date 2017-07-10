@@ -20,7 +20,7 @@ class NearestKFinder(AbstractNeighbourFinder):
         # logging.debug("start resampling for k nearest")
         self.station_dict_at_position = {}
         for station_dict in station_dicts:
-            self._sample_up(station_dict, start_date, end_date)
+            self.sample_up(station_dict, start_date, end_date)
         # logging.debug("end resampling for k nearest")
 
     def _sort_for_target(self, station_dict):

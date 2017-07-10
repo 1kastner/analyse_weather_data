@@ -80,6 +80,7 @@ def score_algorithm(start_date, end_date, limit=0):
         print("interpolate for", target_station_dict["name"])
         print("use", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
+        scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
         for date in target_station_dict["data_frame"].index.values:
             sum_square_errors = {}
             result = score_interpolation_algorithm_at_date(scorer, date)
@@ -102,15 +103,16 @@ def score_algorithm(start_date, end_date, limit=0):
             scoring.append([method, method_rmse])
         scoring.sort(key=lambda x: x[1])
         for method, score in scoring:
-            print(method, " "*(12-len(method)), score)
+            score_str = "%.3f" % score
+            print(method, " "*(12-len(method)), score_str, "n=" + str(sum_square_errors[method]["n"]))
         print()
     print()
 
 
 def demo():
-    start_date = "2016-01-25"
-    end_date = "2016-02-15"
-    score_algorithm(start_date, end_date, limit=30)
+    start_date = "2016-01-29"
+    end_date = "2016-02-02"
+    score_algorithm(start_date, end_date, limit=20)
 
 
 if __name__ == "__main__":

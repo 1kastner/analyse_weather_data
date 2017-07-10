@@ -12,7 +12,7 @@ class AbstractNeighbourFinder:
     # make a measurement valid for 30 minutes
     DECAY = 30
 
-    def _sample_up(self, station_dict, start_date, end_date):
+    def sample_up(self, station_dict, start_date, end_date):
         """
         
         :param station_dict: The station dict to sample up
@@ -28,7 +28,6 @@ class AbstractNeighbourFinder:
         real_end_date = end_date + datetime.timedelta(days=1)
         df_year = pandas.DataFrame(index=pandas.date_range(start_date, real_end_date, freq='T', name="datetime"))
         df = df.join(df_year, how="outer")
-        df = df.resample('1T').asfreq()
-        df.temperature = df.temperature.ffill(limit=self.DECAY)
+        df.temperature.fillna(method="ffill", limit=self.DECAY, inplace=True)
         station_dict["data_frame"] = df
         station_dict["is_sampled_up"] = True
