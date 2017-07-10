@@ -1,70 +1,5 @@
-import os.path
-import statistics
-
-import geopy
-import geopy.distance
-import pandas as pd
-import numpy as np
-from scipy.spatial import Delaunay
 
 
-def find_k_nearest_neighbours(t, station_dfs, k):
-    """
-    
-    :param t: Time point
-    :type t: ``datetime.datetime``
-    :param station_dfs: A list of temperature records sorted by distance.
-    :param k: number of neighbours
-    :return: 
-    """
-    neighbours = []
-    found = 0
-    for station_df in station_dfs:
-        temperature_at_time_t = station_df.loc[t].temperature
-        if np.isnan(temperature_at_time_t):  # station not available
-            continue
-        else:
-            found += 1
-            distance = station_df.distance  # a simple attribute attached while sorting
-            neighbours.append([temperature_at_time_t, distance])
-            if k != -1 and found == k:
-                break
-
-    return neighbours
-
-
-def find_delaunay_neighbours(lat, lon, t, station_dfs):
-    filtered_stations = []
-    for station_df in station_dfs:
-        temperature_at_time_t = station_df.loc[t].temperature
-        if not np.isnan(temperature_at_time_t):
-            filtered_stations.append(
-                    np.array([
-                        station_df.lat.values[0],
-                        station_df.lon.values[0]
-                    ]
-                )
-            )
-    if len(filtered_stations) <= 4:  # QHULL: needs 4 to form initial simplex
-        return []
-    tri = Delaunay(filtered_stations)
-    index = tri.find_simplex(np.array([(lat, lon)]))[0]
-    if index != -1:
-        coordinates_index = tri.simplices[index]
-        coordinates = tri.points[coordinates_index]
-        stations = list()
-        for station_coordinates in coordinates:
-            station_at_coordinates = (str(station_coordinates[0]) + "," +
-                    str(station_coordinates[1]))
-            stations.append(STATION_AT[station_at_coordinates])
-        delaunay_neighbour_dfs = list()
-        for station_df in stations:
-            temperature = station_df.loc[t].temperature
-            distance = -1
-            delaunay_neighbour_dfs.append([temperature, distance])
-        return delaunay_neighbour_dfs
-    else:  # no delaunay triangle found, error
-        return []
 
 eddh_df = load_station("EDDH")
 
@@ -156,16 +91,7 @@ def score_algorithm(station_dfs, p):
         print("work on " + husconet_station)
         station_df = load_station(husconet_station, is_clean=True)
 
-        search_lat = station_df.lat.values[0]
-        search_lon = station_df.lon.values[0]
-        search = geopy.Point(search_lat, search_lon)
-        for df in station_dfs:
-            point_lat = df.lat.values[0]
-            point_lon = df.lon.values[0]
-            point = geopy.Point(point_lat, point_lon)
-            distance = geopy.distance.distance(point, search).km
-            df.distance = distance
-        station_dfs.sort(key=lambda station_df: station_df.distance)
+
 
         #print("Have them sorted: ")
         #for df in station_dfs:

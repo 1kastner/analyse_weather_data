@@ -3,18 +3,15 @@
 """
 import logging
 
-import pandas
 import numpy
 from scipy.spatial import Delaunay
 import geopy.distance
 
-from ..visualizer import  draw_map
+from .abstract_neighbour_finder import AbstractNeighbourFinder
+from ..visualizer import draw_map
 
 
-class DelaunayTriangulator:
-
-    # make a measurement valid for 30 minutes
-    DECAY = 30
+class DelaunayTriangulator(AbstractNeighbourFinder):
 
     def __init__(self, meta_data_df, station_dicts, start_date, end_date, use_triangulation_cache=True):
         self.meta_data_df = meta_data_df
@@ -29,12 +26,8 @@ class DelaunayTriangulator:
         for station_dict in station_dicts:
             position = station_dict["meta_data"]["position"]
             self.station_dict_at_position[(position["lat"], position["lon"])] = station_dict
-            
-            df = station_dict["data_frame"]
-            df_year = pandas.DataFrame(index=pandas.date_range(start_date, end_date, freq='T', name="datetime"))
-            df = df.join([df_year], how="outer")
-            station_dict["data_frame"] = df = df.resample('1T').asfreq()
-            station_dict["data_frame"].temperature = df.temperature.ffill(limit=self.DECAY)
+            self._sample_up(station_dict, start_date, end_date)
+
         logging.debug("end resampling")
 
     def find_delaunay_neighbours(self, station_dict, t):
