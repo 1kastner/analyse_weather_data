@@ -55,6 +55,7 @@ def gather_statistics(private_weather_stations_file_name):
     station_repository = StationRepository(private_weather_stations_file_name)
     software_types = []
     stations_df = station_repository.get_all_stations()
+    print("total: ", len(stations_df))
     for station in stations_df.index:
         software_types.append(get_software_type(station))
     for software_type, count in collections.Counter(software_types).items():
@@ -83,6 +84,6 @@ def run():
     gather_statistics(outdoor_and_shaded)
     print()
 
-    
+
 if __name__ == "__main__":
     run()
