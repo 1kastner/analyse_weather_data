@@ -49,7 +49,8 @@ class StationRepository:
     def get_all_stations(self, limit=0):
         """
     
-        :return: All stations which have been detected before
+        :return: All stations which have been detected before as a data frame
+        :rtype: ``pandas.DataFrame``
         """
         if self.stations_df is None:
             csv_file = os.path.join(PROCESSED_DATA_DIR, self.private_weather_stations_file_name)
