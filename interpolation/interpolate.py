@@ -81,18 +81,17 @@ def score_algorithm(start_date, end_date, limit=0):
         print("use", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
         scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
+        sum_square_errors = {}
         for date in target_station_dict["data_frame"].index.values:
-            sum_square_errors = {}
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
                 if method not in sum_square_errors:
                     sum_square_errors[method] = {}
                     sum_square_errors[method]["total"] = 0
                     sum_square_errors[method]["n"] = 0
-                if numpy.isnan(square_error):
-                    continue
-                sum_square_errors[method]["total"] += square_error
-                sum_square_errors[method]["n"] += 1
+                if not numpy.isnan(square_error):
+                    sum_square_errors[method]["total"] += square_error
+                    sum_square_errors[method]["n"] += 1
         scoring = []
         for method, result in sum_square_errors.items():
             if sum_square_errors[method]["n"] > 0:
@@ -110,8 +109,8 @@ def score_algorithm(start_date, end_date, limit=0):
 
 
 def demo():
-    start_date = "2016-01-29"
-    end_date = "2016-02-02"
+    start_date = "2016-01-30"
+    end_date = "2016-02-01"
     score_algorithm(start_date, end_date, limit=20)
 
 
