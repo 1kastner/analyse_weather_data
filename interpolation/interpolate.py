@@ -1,18 +1,18 @@
 """
 
 """
-import os
 import random
 import logging
 
 import numpy
 
 from filter_weather_data.filters import StationRepository
+from filter_weather_data import get_repository_parameters
+from filter_weather_data import RepositoryParameter
 
 from .interpolator.delaunay_triangulator import DelaunayTriangulator
 from .interpolator.nearest_k_finder import NearestKFinder
 from . import load_airport
-from . import PROCESSED_DATA_DIR
 from .interpolator.statistical_interpolator import get_interpolation_result_for_all_neighbours
 from .interpolator.statistical_interpolator import get_interpolation_result_for_some_neighbours
 
@@ -67,12 +67,8 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
-def score_algorithm(start_date, end_date, limit=0):
-    only_outdoor_and_shaded = (
-        os.path.join(PROCESSED_DATA_DIR, "filtered_stations", "station_dicts_shaded.csv"),
-        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_of_shaded_stations")
-    )
-    station_repository = StationRepository(*only_outdoor_and_shaded)
+def score_algorithm(start_date, end_date, repository_parameters, limit=0):
+    station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
     # separate in two sets
@@ -114,10 +110,14 @@ def score_algorithm(start_date, end_date, limit=0):
     print()
 
 
+
+
+
 def demo():
     start_date = "2016-01-31"
     end_date = "2016-02-01"
-    score_algorithm(start_date, end_date, limit=15)
+    repository_parameters = get_repository_parameters(RepositoryParameter.ONLY_OUTDOOR_AND_SHADED)
+    score_algorithm(start_date, end_date, repository_parameters, limit=10)
 
 
 if __name__ == "__main__":

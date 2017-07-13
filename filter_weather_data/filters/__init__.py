@@ -10,13 +10,7 @@ import numpy
 import pandas
 import dateutil.parser
 
-
-PROCESSED_DATA_DIR = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        os.pardir,
-        os.pardir,
-        "processed_data"
-)
+from .. import PROCESSED_DATA_DIR
 
 
 class StationRepository:
