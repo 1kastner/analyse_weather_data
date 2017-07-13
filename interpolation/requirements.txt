@@ -1,0 +1,4 @@
+python-dateutil==2.6.0
+pandas==0.20.1
+numpy==1.12.1
+geopy==1.11.0

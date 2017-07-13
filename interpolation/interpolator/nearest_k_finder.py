@@ -42,7 +42,7 @@ class NearestKFinder(AbstractNeighbourFinder):
         
         :param station_dict: The station to look for
         :param date: The time point (pandas compatible)
-        :param k: The number of neighbours
+        :param k: The number of neighbours, all neighbours for k=-1
         :return: List of closest temperatures and distances
         """
         if self.last_target != station_dict:

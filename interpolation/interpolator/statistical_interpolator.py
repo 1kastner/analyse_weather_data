@@ -31,7 +31,7 @@ def get_square_error_calculator(t_actual):
     return calculate_square_error
 
 
-def get_interpolation_result(temperature_distance_tuples, t_actual, postfix=""):
+def get_interpolation_result_for_some_neighbours(temperature_distance_tuples, t_actual, postfix=""):
     """
     
     :param temperature_distance_tuples: List of temperature and distance pairs
@@ -55,6 +55,26 @@ def get_interpolation_result(temperature_distance_tuples, t_actual, postfix=""):
     return result
 
 
+def get_interpolation_result_for_all_neighbours(temperature_distance_tuples, t_actual):
+    """
+
+    :param temperature_distance_tuples: List of temperature and distance pairs
+    :param t_actual: The actual temperature
+    :param postfix: The postfix for different methods if needed
+    :return: Several simplistic measurements.
+    :rtype: dict
+    """
+    if not temperature_distance_tuples:  # No neighbours could be found
+        return {}
+    temperatures, distances = zip(*temperature_distance_tuples)
+    calculate_square_error = get_square_error_calculator(t_actual)
+    result = {
+        "idw_p2_all": calculate_square_error(inverted_distance_weight(temperatures, distances, 2)),
+        "idw_p3_all": calculate_square_error(inverted_distance_weight(temperatures, distances, 3)),
+    }
+    return result
+
+
 def demo():
     start_date = '2016-01-01T00:00'
     end_date = '2016-03-31T23:59'
@@ -70,7 +90,9 @@ def demo():
     t = search_for["data_frame"].index.values[0]
     neighbours = k_nearest_finder.find_k_nearest_neighbours(search_for, t, 3)
     t_actual = search_for["data_frame"].loc[t].temperature
-    result = get_interpolation_result(neighbours, t_actual)
+    result = get_interpolation_result_for_some_neighbours(neighbours, t_actual)
+    neighbours = k_nearest_finder.find_k_nearest_neighbours(search_for, t, -1)
+    result.update(get_interpolation_result_for_all_neighbours(neighbours, t_actual))
     print("actual measurement:", t_actual)
     for neighbour in neighbours:
         temperature, distance = neighbour

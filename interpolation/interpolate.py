@@ -13,7 +13,8 @@ from .interpolator.delaunay_triangulator import DelaunayTriangulator
 from .interpolator.nearest_k_finder import NearestKFinder
 from . import load_airport
 from . import PROCESSED_DATA_DIR
-from .interpolator.statistical_interpolator import get_interpolation_result
+from .interpolator.statistical_interpolator import get_interpolation_result_for_all_neighbours
+from .interpolator.statistical_interpolator import get_interpolation_result_for_some_neighbours
 
 
 class Scorer:
@@ -38,25 +39,30 @@ class Scorer:
 
     def score_3_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 3)
-        return get_interpolation_result(relevant_neighbours, t_actual, "_cn3")
+        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_cn3")
 
     def score_5_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 5)
-        return get_interpolation_result(relevant_neighbours, t_actual, "_cn5")
+        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_cn5")
 
     def score_delaunay_neighbours(self, date, t_actual):
         relevant_neighbours = self.delaunay_triangulator.find_delaunay_neighbours(self.target_station_dict, date)
-        return get_interpolation_result(relevant_neighbours, t_actual, "_dt")
+        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_dt")
+
+    def score_all_neighbours(self, date, t_actual):
+        relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, -1)
+        return get_interpolation_result_for_all_neighbours(relevant_neighbours, t_actual)
 
 
 def score_interpolation_algorithm_at_date(scorer, date):
     t_actual = scorer.target_station_dict["data_frame"].loc[date].temperature
     results = {
         "nn": scorer.score_nearest_neighbour(date, t_actual),
-        "eddh": scorer.score_airport(date, t_actual)
+        "eddh": scorer.score_airport(date, t_actual),
     }
     results.update(scorer.score_3_nearest_neighbours(date, t_actual))
     results.update(scorer.score_5_nearest_neighbours(date, t_actual))
+    results.update(scorer.score_all_neighbours(date, t_actual))
     results.update(scorer.score_delaunay_neighbours(date, t_actual))
     return results
 
@@ -109,9 +115,9 @@ def score_algorithm(start_date, end_date, limit=0):
 
 
 def demo():
-    start_date = "2016-01-30"
+    start_date = "2016-01-31"
     end_date = "2016-02-01"
-    score_algorithm(start_date, end_date, limit=20)
+    score_algorithm(start_date, end_date, limit=15)
 
 
 if __name__ == "__main__":
