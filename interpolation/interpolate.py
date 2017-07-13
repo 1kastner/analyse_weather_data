@@ -75,10 +75,14 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
     random.shuffle(station_dicts)
     separator = 1 - int(.7 * len(station_dicts))
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
+    print("General Overview")
     print("targets: ", " ".join([station_dict["name"] for station_dict in target_station_dicts]))
     print("neighbours: ", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    print()
 
+    print("Several Runs")
     for target_station_dict in target_station_dicts:
+        print()
         print("interpolate for", target_station_dict["name"])
         print("use", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
@@ -108,9 +112,6 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
             print(method, " "*(12-len(method)), score_str, "n=" + str(sum_square_errors[method]["n"]))
         print()
     print()
-
-
-
 
 
 def demo():
