@@ -55,21 +55,37 @@ class GermanWinterTime(datetime.tzinfo):
         return datetime.timedelta(0)
 
 
-def load_husconet_temperature_average(start_date, end_date):
+def load_husconet_temperature_average(start_date, end_date, excluded_husconet_stations):
+    if excluded_husconet_stations is not None:
+        excluded_husconet_stations = list(excluded_husconet_stations)
+        excluded_husconet_stations.sort()
+        file_name = "husconet_average_temperature_exclude_{excluded}.csv".format(
+            excluded="_".join(excluded_husconet_stations))
+    else:
+        file_name = "husconet_average_temperature.csv"
     csv_file = os.path.join(
         PROCESSED_DATA_DIR,
         "husconet",
-        "husconet_average_temperature.csv"
+        file_name
     )
+    logging.debug("loading for temperature average: '{file}'".format(file=csv_file))
     return load_husconet_file(csv_file, start_date, end_date)
 
 
-def load_husconet_radiation_average(start_date, end_date):
+def load_husconet_radiation_average(start_date, end_date, excluded_husconet_stations):
+    if excluded_husconet_stations is not None:
+        excluded_husconet_stations = list(excluded_husconet_stations)
+        excluded_husconet_stations.sort()
+        file_name = "husconet_average_radiation_exclude_{excluded}.csv".format(
+            excluded="_".join(excluded_husconet_stations))
+    else:
+        file_name = "husconet_average_radiation.csv"
     csv_file = os.path.join(
         PROCESSED_DATA_DIR,
         "husconet",
-        "husconet_average_radiation.csv"
+        file_name
     )
+    logging.debug("loading for radiation average: '{file}'".format(file=csv_file))
     return load_husconet_file(csv_file, start_date, end_date)
 
 

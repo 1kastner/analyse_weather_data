@@ -11,6 +11,7 @@ import numpy
 from gather_weather_data.husconet import load_husconet_temperature_average
 from gather_weather_data.husconet import GermanWinterTime
 from . import StationRepository
+from .preparation.average_husconet_temperature import average_temperature_across_husconet_stations
 
 
 class Ellipse:
@@ -99,15 +100,15 @@ def check_station(station_df, reference_interval):
     return True
 
 
-def get_reference_interval(start_date, end_date):
+def get_reference_interval(start_date, end_date, excluded_reference_stations):
     """
     
     :param start_date: The first value to load (included)
     :param end_date: The last value to load (included)
+    :param excluded_reference_stations: Exclude a collection of reference stations (e.g. for future evaluation)
     :return: This creates the norm whether the provided minimum temperature and daily deviation can be considered usual
     """
-    reference_df = load_husconet_temperature_average(start_date, end_date)
-    reference_df = reference_df[start_date:end_date]
+    reference_df = load_husconet_temperature_average(start_date, end_date, excluded_reference_stations)
     result = {}
 
     for year in reference_df.index.year.unique():
@@ -142,14 +143,15 @@ def get_reference_interval(start_date, end_date):
     return result
 
 
-def filter_stations(station_dicts, start_date, end_date):
+def filter_stations(station_dicts, start_date, end_date, excluded_reference_stations=None):
     """
 
     :param station_dicts: The station dicts
     :param start_date: The date to start (included) 
     :param end_date: The date to stop (included)
+    :param excluded_reference_stations: Exclude a collection of reference stations (e.g. for future evaluation)
     """
-    reference_interval = get_reference_interval(start_date, end_date)
+    reference_interval = get_reference_interval(start_date, end_date, excluded_reference_stations)
     filtered_stations = []
 
     for station_dict in station_dicts:
@@ -161,13 +163,22 @@ def filter_stations(station_dicts, start_date, end_date):
 
 def demo():
     start_date = "2016-01-01T00:00:00+01:00"
-    end_date = "2016-12-31T00:00:00+01:00"
+    end_date = "2016-03-31T00:00:00+01:00"
     time_zone = GermanWinterTime()
     stations = ['IHAMBURG69', 'IBNNINGS2']
     station_repository = StationRepository()
     station_dicts = [station_repository.load_station(station, start_date, end_date, time_zone=time_zone)
                      for station in stations]
+    station_dicts = [s for s in station_dicts if s]
+    print("use all reference stations")
     stations_inside_reference = filter_stations(station_dicts, start_date, end_date)
+    print([station_dict["name"] for station_dict in stations_inside_reference])
+    print()
+    exclude_hcm = ["HCM"]
+    average_temperature_across_husconet_stations(exclude_stations=exclude_hcm)
+    print("use some reference stations")
+    stations_inside_reference = filter_stations(station_dicts, start_date, end_date,
+                                                excluded_reference_stations=exclude_hcm)
     print([station_dict["name"] for station_dict in stations_inside_reference])
 
 
