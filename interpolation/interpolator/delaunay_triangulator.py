@@ -8,7 +8,7 @@ from scipy.spatial import Delaunay
 import geopy.distance
 
 from .abstract_neighbour_finder import AbstractNeighbourFinder
-from ..visualizer import draw_map
+from ..visualize_points_on_map import draw_map
 
 
 class DelaunayTriangulator(AbstractNeighbourFinder):

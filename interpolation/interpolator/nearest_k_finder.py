@@ -7,7 +7,7 @@ import numpy
 import geopy
 import geopy.distance
 
-from ..visualizer import draw_map
+from ..visualize_points_on_map import draw_map
 from .abstract_neighbour_finder import AbstractNeighbourFinder
 
 

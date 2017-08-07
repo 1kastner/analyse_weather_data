@@ -1,7 +1,6 @@
 """
 
 """
-import datetime
 import random
 import logging
 
@@ -82,8 +81,10 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
     logging.info("End overview")
 
     logging.info("Several Runs")
-    for target_station_dict in target_station_dicts:
+    target_station_dicts_len = str(len(target_station_dicts))
+    for current_j, target_station_dict in enumerate(target_station_dicts):
         logging.info("interpolate for " + target_station_dict["name"])
+        logging.info("currently at " + str(current_j) + " out of " + target_station_dicts_len)
         logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
         scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
@@ -91,7 +92,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
         total_len = len(target_station_dict["data_frame"].index.values)
         for current_i, date in enumerate(target_station_dict["data_frame"].index.values):
             if current_i % 5000 == 0:
-                logging.debug(" >>> Calculation is {}% complete".format(100 * (current_i / total_len)))
+                logging.debug(" >>> Calculation for target is %.2f complete" % (100 * (current_i / total_len)))
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
                 if method not in sum_square_errors:
