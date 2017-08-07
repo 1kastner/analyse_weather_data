@@ -15,29 +15,29 @@ def sample_up(df, start_date, end_date, decay):
     return df
 
 
-def grid_data(station_dicts, t, bins_per_step):
+def grid_data(margin, station_dicts, t, bins_per_step):
     xs, ys, zs = [], [], []
     for station_dict in station_dicts:
         position = station_dict["meta_data"]["position"]
         lat, lon = position["lat"], position["lon"]
         temperature = station_dict["data_frame"].temperature.loc[t]
-        if not numpy.isnan(temperature):
-            xs.append(lon)
-            ys.append(lat)
-            zs.append(temperature)
-    x_min = min(xs)
-    x_max = max(xs)
-    y_min = min(ys)
-    y_max = max(ys)
+        xs.append(lon)
+        ys.append(lat)
+        zs.append(temperature)
+    x_min = min(xs) - margin
+    x_max = max(xs) + margin
+    y_min = min(ys) - margin
+    y_max = max(ys) + margin
     xs = numpy.array(xs)
     ys = numpy.array(ys)
     zs = numpy.array(zs)
 
     xi = numpy.linspace(x_min, x_max, (x_max - x_min) * bins_per_step)
     yi = numpy.linspace(y_min, y_max, (y_max - y_min) * bins_per_step)
+    indices = ~numpy.isnan(zs)  # indices of not-NaN values.
     zi = griddata(
-                  (xs, ys),
-                  zs,
+                  (xs[indices], ys[indices]),  # ignore NaNs for NN interpolation
+                  zs[indices],
                   (xi[None, :], yi[:, None]),
                   method='nearest'
                   )
@@ -57,8 +57,8 @@ def plot(margin, x_min, x_max, xs, xi, y_min, y_max, ys, yi, zs, zi):
     # bad values, isnan
     pyplot.scatter(xs[~indices], ys[~indices], marker='o', c="k", s=marker_size)
 
-    pyplot.xlim(x_min - margin, x_max + margin)
-    pyplot.ylim(y_min - margin, y_max + margin)
+    pyplot.xlim(x_min, x_max)
+    pyplot.ylim(y_min, y_max)
     pyplot.title("Interpolation")
     pyplot.show()
 
@@ -66,15 +66,23 @@ def plot(margin, x_min, x_max, xs, xi, y_min, y_max, ys, yi, zs, zi):
 def demo():
     from filter_weather_data.filters import StationRepository
     from gather_weather_data.husconet import GermanWinterTime
-    start_date = '2016-12-01T00:00'
-    end_date = '2016-12-01T00:00'
+    date = '2016-12-01T00:00'
+    start_date = date  # first value to load
+    end_date = date  # load until this date (plus some margin)
+    t = date  # check the values at this given time
     bins_per_step = 10000
     station_repository = StationRepository()
-    station_dicts = station_repository.load_all_stations(start_date, end_date, time_zone=GermanWinterTime(), limit=300)
+    station_dicts = station_repository.load_all_stations(
+        start_date,
+        end_date,
+        time_zone=GermanWinterTime(),
+        # limit=300
+    )
     for station_dict in station_dicts:
         station_dict["data_frame"] = sample_up(station_dict["data_frame"], start_date, end_date, 30)  # 30 minutes decay
-    vals = grid_data(station_dicts, '2016-12-01T00:00', bins_per_step)
-    plot(0.01, *vals)
+    margin = 0.01
+    values = grid_data(margin, station_dicts, t, bins_per_step)
+    plot(margin, *values)
 
 
 if __name__ == "__main__":

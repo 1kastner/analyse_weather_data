@@ -113,7 +113,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
         scoring.sort(key=lambda x: x[1])
         for method, score in scoring:
             score_str = "%.3f" % score
-            logging.info(method + " "*(12-len(method)) + score_str + "n=" + str(sum_square_errors[method]["n"]))
+            logging.info(method + " "*(12-len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
         logging.info("end method list")
     logging.info("end targets")
 
