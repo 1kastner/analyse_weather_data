@@ -76,24 +76,22 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
     random.shuffle(station_dicts)
     separator = 1 - int(.7 * len(station_dicts))
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
-    print("General Overview")
-    print("targets: ", " ".join([station_dict["name"] for station_dict in target_station_dicts]))
-    print("neighbours: ", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
-    print()
+    logging.info("General Overview")
+    logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
+    logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    logging.info("End overview")
 
-    print("Several Runs")
+    logging.info("Several Runs")
     for target_station_dict in target_station_dicts:
-        print()
-        print("interpolate for", target_station_dict["name"])
-        print("use", " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+        logging.info("interpolate for " + target_station_dict["name"])
+        logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
         scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
         sum_square_errors = {}
         total_len = len(target_station_dict["data_frame"].index.values)
         for current_i, date in enumerate(target_station_dict["data_frame"].index.values):
             if current_i % 5000 == 0:
-                logging.debug(datetime.datetime.now().isoformat() +
-                              ">>> Calculation is {}% complete".format(current_i / total_len))
+                logging.debug(" >>> Calculation is {}% complete".format(100 * (current_i / total_len)))
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
                 if method not in sum_square_errors:
@@ -114,9 +112,9 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
         scoring.sort(key=lambda x: x[1])
         for method, score in scoring:
             score_str = "%.3f" % score
-            print(method, " "*(12-len(method)), score_str, "n=" + str(sum_square_errors[method]["n"]))
-        print()
-    print()
+            logging.info(method + " "*(12-len(method)) + score_str + "n=" + str(sum_square_errors[method]["n"]))
+        logging.info("end method list")
+    logging.info("end targets")
 
 
 def demo():
