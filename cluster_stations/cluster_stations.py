@@ -90,7 +90,7 @@ def run_clustering(repository_parameter_name, start_date, end_date, limit):
 
 
 def demo():
-    repository_parameter_name = RepositoryParameter.START
+    repository_parameter_name = RepositoryParameter.ONLY_OUTDOOR_AND_SHADED
     start_date = "2016-01-01"
     end_date = "2016-12-31"
     limit = None
