@@ -92,7 +92,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
         total_len = len(target_station_dict["data_frame"].index.values)
         for current_i, date in enumerate(target_station_dict["data_frame"].index.values):
             if current_i % 5000 == 0:
-                logging.debug(" >>> Calculation for target is %.2f complete" % (100 * (current_i / total_len)))
+                logging.debug(" >>> Calculation for target is %.2f %% complete" % (100 * (current_i / total_len)))
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
                 if method not in sum_square_errors:

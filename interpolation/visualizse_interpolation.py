@@ -44,7 +44,7 @@ def grid_data(margin, station_dicts, t, bins_per_step):
     return x_min, x_max, xs, xi, y_min, y_max, ys, yi, zs, zi
 
 
-def plot(margin, x_min, x_max, xs, xi, y_min, y_max, ys, yi, zs, zi):
+def plot(x_min, x_max, xs, xi, y_min, y_max, ys, yi, zs, zi):
     jet = pyplot.cm.get_cmap("jet")
     pyplot.contour(xi, yi, zi, linewidths=0.5, colors='k')
     pyplot.contourf(xi, yi, zi, cmap=jet)
@@ -82,7 +82,7 @@ def demo():
         station_dict["data_frame"] = sample_up(station_dict["data_frame"], start_date, end_date, 30)  # 30 minutes decay
     margin = 0.01
     values = grid_data(margin, station_dicts, t, bins_per_step)
-    plot(margin, *values)
+    plot(*values)
 
 
 if __name__ == "__main__":
