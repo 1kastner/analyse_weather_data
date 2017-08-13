@@ -1,7 +1,8 @@
 """
 
 """
-
+import os
+import sys
 import logging
 
 from cluster import HierarchicalClustering
@@ -63,10 +64,6 @@ class StationTimeSeriesComparator:
         return distance
 
 
-def log_progress(total, remaining):
-    logging.debug("Calculation is %.2f %% complete" % (total / remaining))
-
-
 def run_clustering(repository_parameter_name, start_date, end_date, limit):
     """
 
@@ -85,22 +82,42 @@ def run_clustering(repository_parameter_name, start_date, end_date, limit):
     cluster = HierarchicalClustering(
         stations,
         station_time_series_comparator.compare_time_series,
-        progress_callback=log_progress,
         num_processes=4
     )
     cluster.cluster()
-    cluster.display()
+    cluster.display(print_function=logging.debug)
     logging.info(cluster._data)
 
 
 def demo():
     repository_parameter_name = RepositoryParameter.START
     start_date = "2016-01-01"
-    end_date = "2016-01-01"
+    end_date = "2016-12-31"
     limit = None
     run_clustering(repository_parameter_name, start_date, end_date, limit=limit)
 
 
+def get_logger(file_to_log_to):
+    log = logging.getLogger("")
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    log.addHandler(console_handler)
+
+    path_to_file_to_log_to = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "log",
+        file_to_log_to
+    )
+    file_handler = logging.FileHandler(path_to_file_to_log_to)
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+    logging.info("### Start new logging")
+    return log
+
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    get_logger("cluster_stations.log")
     demo()
