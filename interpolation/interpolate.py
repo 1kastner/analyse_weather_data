@@ -61,8 +61,8 @@ def score_interpolation_algorithm_at_date(scorer, date):
         "eddh": scorer.score_airport(date, t_actual),
     }
     results.update(scorer.score_3_nearest_neighbours(date, t_actual))
-    # results.update(scorer.score_5_nearest_neighbours(date, t_actual))
-    # results.update(scorer.score_all_neighbours(date, t_actual))
+    results.update(scorer.score_5_nearest_neighbours(date, t_actual))
+    results.update(scorer.score_all_neighbours(date, t_actual))
     results.update(scorer.score_delaunay_neighbours(date, t_actual))
     return results
 
