@@ -84,15 +84,19 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
     target_station_dicts_len = str(len(target_station_dicts))
     for current_j, target_station_dict in enumerate(target_station_dicts):
         logging.info("interpolate for " + target_station_dict["name"])
-        logging.info("currently at " + str(current_j) + " out of " + target_station_dicts_len)
+        logging.info("currently at " + str(current_j + 1) + " out of " + target_station_dicts_len)
         logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
         scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
         sum_square_errors = {}
         total_len = len(target_station_dict["data_frame"].index.values)
-        for current_i, date in enumerate(target_station_dict["data_frame"].index.values):
+        each_minute = target_station_dict["data_frame"].index.values
+        grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
+        each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+        hour_len = len(each_hour)
+        for current_i, date in enumerate(each_hour):
             if current_i % 5000 == 0:
-                logging.debug(" >>> Calculation for target is %.2f %% complete" % (100 * (current_i / total_len)))
+                logging.debug(" >>> Calculation for target is %.2f %% complete" % (100 * (current_i / hour_len)))
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
                 if method not in sum_square_errors:
@@ -110,7 +114,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
                 method_rmse = numpy.nan
             sum_square_errors[method]["rmse"] = method_rmse
             scoring.append([method, method_rmse])
-        scoring.sort(key=lambda x: x[1])
+        scoring.sort(key=lambda x: x[1])  # sort the best result first
         for method, score in scoring:
             score_str = "%.3f" % score
             logging.info(method + " "*(12-len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
