@@ -47,6 +47,7 @@ def get_interpolation_results(temperature_distance_tuples, t_actual, postfix="")
     temperatures, distances = zip(*temperature_distance_tuples)
     calculate_square_error = get_square_error_calculator(t_actual)
     result = {
+        "idw_p1" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 1)),
         "idw_p2" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 2)),
         "idw_p3" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 3)),
         "idw_p4" + postfix: calculate_square_error(inverted_distance_weight(temperatures, distances, 4)),
