@@ -216,7 +216,7 @@ def demo():
     start_date = "2016-01-31"
     end_date = "2016-02-01"
     repository_parameters = get_repository_parameters(RepositoryParameter.ONLY_OUTDOOR_AND_SHADED)
-    score_algorithm(start_date, end_date, repository_parameters, limit=10, n_processes=4, interpolation_name="test")
+    score_algorithm(start_date, end_date, repository_parameters, limit=10, n_processes=2, interpolation_name="test")
 
 
 if __name__ == "__main__":
