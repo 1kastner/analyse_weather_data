@@ -82,7 +82,9 @@ def demo():
     for neighbour in neighbours:
         temperature, distance = neighbour
         print("measured", temperature, "°C in", distance, "meters distance")
-    for method, value in result.items():
+    items = list(result.items())
+    items.sort(key=lambda el: el[0])
+    for method, value in items:
         print("method", method, "value", value**.5)
 
 if __name__ == "__main__":
