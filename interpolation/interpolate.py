@@ -106,11 +106,12 @@ def do_interpolation_scoring(
         target_station_dict,
         j,
         target_station_dicts_len,
-        neighbour_station_dicts,
+        ns,
         start_date,
         end_date,
         interpolation_name
 ):
+    neighbour_station_dicts = ns.neighbour_station_dicts
     target_station_name = target_station_dict["name"]
     logger = get_logger(interpolation_name)
     logger.info("interpolate for " + target_station_name)
@@ -154,14 +155,6 @@ def do_interpolation_scoring(
     return pandas.DataFrame(data=data_dict)
 
 
-data = None
-
-
-def init(_data):
-    global data
-    data = _data  # data is now accessible in all children, even on Windows
-
-
 def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_processes=4, interpolation_name="NONE"):
     station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
@@ -180,14 +173,16 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_proc
     logger.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
 
-    pool = multiprocessing.Pool(n_processes, initializer=init, initargs=(neighbour_station_dicts,))
+    pool = multiprocessing.Pool(n_processes)
+    ns = multiprocessing.Manager().Namespace()
+    ns.neighbour_station_dicts = neighbour_station_dicts
     try:
         overall_result = pool.starmap(do_interpolation_scoring, [
             [
                 target_station_dict,
                 j,
                 target_station_dicts_len,
-                neighbour_station_dicts,
+                ns,
                 start_date,
                 end_date,
                 interpolation_name
@@ -213,8 +208,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_proc
 
     overall_result_df.to_csv("interpolation_result_{date}_{interpolation_name}.csv".format(
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
-        interpolation_name=interpolation_name,
-        random_chunk="".join([str(random.randint(0, 9)) for _ in range(10)])
+        interpolation_name=interpolation_name
     ))
 
 
