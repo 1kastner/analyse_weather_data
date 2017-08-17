@@ -105,3 +105,4 @@ private/
 husconet_raw_data/
 wunderground_raw_airport_data/
 interpolation/private_backup/
+interpolation/interpolation_result_*.csv

@@ -1,10 +1,12 @@
 """
 
 """
+import datetime
 import random
 import logging
 
 import numpy
+import pandas
 
 from filter_weather_data.filters import StationRepository
 from filter_weather_data import get_repository_parameters
@@ -67,7 +69,7 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
-def score_algorithm(start_date, end_date, repository_parameters, limit=0):
+def score_algorithm(start_date, end_date, repository_parameters, limit=0, verbose=False):
     station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
@@ -80,10 +82,12 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
     logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
     logging.info("End overview")
 
+    overall_result = []
     logging.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
     for current_j, target_station_dict in enumerate(target_station_dicts):
-        logging.info("interpolate for " + target_station_dict["name"])
+        target_station_name = target_station_dict["name"]
+        logging.info("interpolate for " + target_station_name)
         logging.info("currently at " + str(current_j + 1) + " out of " + target_station_dicts_len)
         logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
         scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
@@ -95,7 +99,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
         each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
         hour_len = len(each_hour)
         for current_i, date in enumerate(each_hour):
-            if current_i % 5000 == 0:
+            if verbose and current_i % 5000 == 0:
                 logging.debug(" >>> Calculation for target is %.2f %% complete" % (100 * (current_i / hour_len)))
             result = score_interpolation_algorithm_at_date(scorer, date)
             for method, square_error in result.items():
@@ -106,20 +110,43 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0):
                 if not numpy.isnan(square_error):
                     sum_square_errors[method]["total"] += square_error
                     sum_square_errors[method]["n"] += 1
-        scoring = []
+
         for method, result in sum_square_errors.items():
             if sum_square_errors[method]["n"] > 0:
                 method_rmse = numpy.sqrt(sum_square_errors[method]["total"] / sum_square_errors[method]["n"])
             else:
                 method_rmse = numpy.nan
             sum_square_errors[method]["rmse"] = method_rmse
-            scoring.append([method, method_rmse])
-        scoring.sort(key=lambda x: x[1])  # sort the best result first
-        for method, score in scoring:
-            score_str = "%.3f" % score
+            score_str = "%.3f" % method_rmse
             logging.info(method + " "*(12-len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
         logging.info("end method list")
+
+        data_dict = {}
+        for method in sum_square_errors.keys():
+            data_dict[method + "--rmse"] = [sum_square_errors[method]["rmse"]]
+            data_dict[method + "--n"] = [sum_square_errors[method]["n"]]
+            data_dict[method + "--total"] = [sum_square_errors[method]["total"]]
+        overall_result.append(pandas.DataFrame(data=data_dict))
     logging.info("end targets")
+
+    logging.info("overall results")
+    overall_result_df = pandas.concat(overall_result)
+    column_names = overall_result_df.columns.values.tolist()
+    methods = set()
+    for column_name in column_names:
+        method, value = column_name.split("--")
+        methods.update([method])
+    for method in methods:
+        overall_total = sum(overall_result_df[method + "--total"])
+        overall_n = sum(overall_result_df[method + "--n"])
+        overall_rmse = numpy.sqrt(overall_total / overall_n)
+        score_str = "%.3f" % overall_rmse
+        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
+
+    overall_result_df.to_csv("interpolation_result_{date}_{random_chunk}.csv".format(
+        date=datetime.datetime.now().date().isoformat(),
+        random_chunk="".join([str(random.randint(0, 9)) for _ in range(10)])
+    ))
 
 
 def demo():
