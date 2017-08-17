@@ -1,5 +1,7 @@
 """
 
+Run demo with 
+python3 -m interpolation.interpolate interpolate.py
 """
 import datetime
 import random
@@ -15,8 +17,7 @@ from filter_weather_data import RepositoryParameter
 from .interpolator.delaunay_triangulator import DelaunayTriangulator
 from .interpolator.nearest_k_finder import NearestKFinder
 from . import load_airport
-from .interpolator.statistical_interpolator import get_interpolation_result_for_all_neighbours
-from .interpolator.statistical_interpolator import get_interpolation_result_for_some_neighbours
+from .interpolator.statistical_interpolator import get_interpolation_results
 
 
 class Scorer:
@@ -41,19 +42,19 @@ class Scorer:
 
     def score_3_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 3)
-        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_cn3")
+        return get_interpolation_results(relevant_neighbours, t_actual, "_cn3")
 
     def score_5_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 5)
-        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_cn5")
+        return get_interpolation_results(relevant_neighbours, t_actual, "_cn5")
 
     def score_delaunay_neighbours(self, date, t_actual):
         relevant_neighbours = self.delaunay_triangulator.find_delaunay_neighbours(self.target_station_dict, date)
-        return get_interpolation_result_for_some_neighbours(relevant_neighbours, t_actual, "_dt")
+        return get_interpolation_results(relevant_neighbours, t_actual, "_dt")
 
     def score_all_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, -1)
-        return get_interpolation_result_for_all_neighbours(relevant_neighbours, t_actual)
+        return get_interpolation_results(relevant_neighbours, t_actual, "_all")
 
 
 def score_interpolation_algorithm_at_date(scorer, date):
