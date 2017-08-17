@@ -7,6 +7,8 @@ import datetime
 import random
 import logging
 import multiprocessing
+import sys
+import os
 
 import numpy
 import pandas
@@ -70,18 +72,51 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
+def get_logger(interpolation_name):
+    log = multiprocessing.get_logger()
+
+    if len(log.handlers):  # everything is already set up
+        return log
+
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(processName)s %(message)s')
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    log.addHandler(console_handler)
+
+    file_name = "interpolation_{date}_{interpolation_name}_{pid}.log".format(
+        interpolation_name=interpolation_name,
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
+        pid=multiprocessing.current_process().pid
+    )
+    path_to_file_to_log_to = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "log",
+        file_name
+    )
+    file_handler = logging.FileHandler(path_to_file_to_log_to)
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+    logging.info("### Start new logging")
+    return log
+
+
 def do_interpolation_scoring(
         target_station_dict,
         j,
         target_station_dicts_len,
         neighbour_station_dicts,
         start_date,
-        end_date
+        end_date,
+        interpolation_name
 ):
     target_station_name = target_station_dict["name"]
-    logging.info("interpolate for " + target_station_name)
-    logging.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
-    logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    logger = get_logger(interpolation_name)
+    logger.info("interpolate for " + target_station_name)
+    logger.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
+    logger.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+
     scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
     scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
     sum_square_errors = {}
@@ -107,8 +142,9 @@ def do_interpolation_scoring(
             method_rmse = numpy.nan
         sum_square_errors[method]["rmse"] = method_rmse
         score_str = "%.3f" % method_rmse
-        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
-    logging.info("end method list")
+        logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
+
+    logger.info("end method list")
 
     data_dict = {}
     for method in sum_square_errors.keys():
@@ -118,7 +154,15 @@ def do_interpolation_scoring(
     return pandas.DataFrame(data=data_dict)
 
 
-def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_processes=4):
+data = None
+
+
+def init(_data):
+    global data
+    data = _data  # data is now accessible in all children, even on Windows
+
+
+def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_processes=4, interpolation_name="NONE"):
     station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
@@ -127,28 +171,33 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_proc
     separator = 1 - int(.7 * len(station_dicts))  # 70% vs 30%
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
 
-    logging.info("General Overview")
-    logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
-    logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
-    logging.info("End overview")
+    logger = get_logger(interpolation_name)
+    logger.info("General Overview")
+    logger.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
+    logger.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    logger.info("End overview")
 
-    logging.info("Several Runs")
+    logger.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
 
-    pool = multiprocessing.Pool(n_processes)
-    overall_result = pool.starmap(do_interpolation_scoring, [
-        [
-            target_station_dict,
-            j,
-            target_station_dicts_len,
-            neighbour_station_dicts,
-            start_date,
-            end_date
-        ] for j, target_station_dict in enumerate(target_station_dicts)
-    ])
-    logging.info("end targets")
+    pool = multiprocessing.Pool(n_processes, initializer=init, initargs=(neighbour_station_dicts,))
+    try:
+        overall_result = pool.starmap(do_interpolation_scoring, [
+            [
+                target_station_dict,
+                j,
+                target_station_dicts_len,
+                neighbour_station_dicts,
+                start_date,
+                end_date,
+                interpolation_name
+            ] for j, target_station_dict in enumerate(target_station_dicts)
+        ])
+    finally:
+        pool.close()
+    logger.info("end targets")
 
-    logging.info("overall results")
+    logger.info("overall results")
     overall_result_df = pandas.concat(overall_result)
     column_names = overall_result_df.columns.values.tolist()
     methods = set()
@@ -160,10 +209,11 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_proc
         overall_n = int(numpy.nansum(overall_result_df[method + "--n"]))
         overall_rmse = numpy.sqrt(overall_total / overall_n)
         score_str = "%.3f" % overall_rmse
-        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
+        logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
 
-    overall_result_df.to_csv("interpolation_result_{date}_{random_chunk}.csv".format(
-        date=datetime.datetime.now().date().isoformat(),
+    overall_result_df.to_csv("interpolation_result_{date}_{interpolation_name}.csv".format(
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
+        interpolation_name=interpolation_name,
         random_chunk="".join([str(random.randint(0, 9)) for _ in range(10)])
     ))
 
@@ -172,9 +222,8 @@ def demo():
     start_date = "2016-01-31"
     end_date = "2016-02-01"
     repository_parameters = get_repository_parameters(RepositoryParameter.ONLY_OUTDOOR_AND_SHADED)
-    score_algorithm(start_date, end_date, repository_parameters, limit=10)
+    score_algorithm(start_date, end_date, repository_parameters, limit=10, n_processes=4, interpolation_name="test")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
     demo()
