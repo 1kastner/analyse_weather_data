@@ -6,6 +6,7 @@ python3 -m interpolation.interpolate interpolate.py
 import datetime
 import random
 import logging
+import multiprocessing
 
 import numpy
 import pandas
@@ -21,7 +22,6 @@ from .interpolator.statistical_interpolator import get_interpolation_results
 
 
 class Scorer:
-
     def __init__(self, target_station_dict, neighbour_station_dicts, start_date, end_date):
         self.target_station_dict = target_station_dict
         self.nearest_k_finder = NearestKFinder(neighbour_station_dicts, start_date, end_date)
@@ -70,64 +70,82 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
-def score_algorithm(start_date, end_date, repository_parameters, limit=0, verbose=False):
+def do_interpolation_scoring(
+        target_station_dict,
+        j,
+        target_station_dicts_len,
+        neighbour_station_dicts,
+        start_date,
+        end_date
+):
+    target_station_name = target_station_dict["name"]
+    logging.info("interpolate for " + target_station_name)
+    logging.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
+    logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
+    scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
+    sum_square_errors = {}
+    total_len = len(target_station_dict["data_frame"].index.values)
+    each_minute = target_station_dict["data_frame"].index.values
+    grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
+    each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+    for current_i, date in enumerate(each_hour):
+        result = score_interpolation_algorithm_at_date(scorer, date)
+        for method, square_error in result.items():
+            if method not in sum_square_errors:
+                sum_square_errors[method] = {}
+                sum_square_errors[method]["total"] = 0
+                sum_square_errors[method]["n"] = 0
+            if not numpy.isnan(square_error):
+                sum_square_errors[method]["total"] += square_error
+                sum_square_errors[method]["n"] += 1
+
+    for method, result in sum_square_errors.items():
+        if sum_square_errors[method]["n"] > 0:
+            method_rmse = numpy.sqrt(sum_square_errors[method]["total"] / sum_square_errors[method]["n"])
+        else:
+            method_rmse = numpy.nan
+        sum_square_errors[method]["rmse"] = method_rmse
+        score_str = "%.3f" % method_rmse
+        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
+    logging.info("end method list")
+
+    data_dict = {}
+    for method in sum_square_errors.keys():
+        data_dict[method + "--rmse"] = [sum_square_errors[method]["rmse"]]
+        data_dict[method + "--n"] = [sum_square_errors[method]["n"]]
+        data_dict[method + "--total"] = [sum_square_errors[method]["total"]]
+    return pandas.DataFrame(data=data_dict)
+
+
+def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_processes=4):
     station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
     # separate in two sets
     random.shuffle(station_dicts)
-    separator = 1 - int(.7 * len(station_dicts))
+    separator = 1 - int(.7 * len(station_dicts))  # 70% vs 30%
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
+
     logging.info("General Overview")
     logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
     logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
     logging.info("End overview")
 
-    overall_result = []
     logging.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
-    for current_j, target_station_dict in enumerate(target_station_dicts):
-        target_station_name = target_station_dict["name"]
-        logging.info("interpolate for " + target_station_name)
-        logging.info("currently at " + str(current_j + 1) + " out of " + target_station_dicts_len)
-        logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
-        scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
-        scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
-        sum_square_errors = {}
-        total_len = len(target_station_dict["data_frame"].index.values)
-        each_minute = target_station_dict["data_frame"].index.values
-        grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
-        each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
-        hour_len = len(each_hour)
-        for current_i, date in enumerate(each_hour):
-            if verbose and current_i % 5000 == 0:
-                logging.debug(" >>> Calculation for target is %.2f %% complete" % (100 * (current_i / hour_len)))
-            result = score_interpolation_algorithm_at_date(scorer, date)
-            for method, square_error in result.items():
-                if method not in sum_square_errors:
-                    sum_square_errors[method] = {}
-                    sum_square_errors[method]["total"] = 0
-                    sum_square_errors[method]["n"] = 0
-                if not numpy.isnan(square_error):
-                    sum_square_errors[method]["total"] += square_error
-                    sum_square_errors[method]["n"] += 1
 
-        for method, result in sum_square_errors.items():
-            if sum_square_errors[method]["n"] > 0:
-                method_rmse = numpy.sqrt(sum_square_errors[method]["total"] / sum_square_errors[method]["n"])
-            else:
-                method_rmse = numpy.nan
-            sum_square_errors[method]["rmse"] = method_rmse
-            score_str = "%.3f" % method_rmse
-            logging.info(method + " "*(12-len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
-        logging.info("end method list")
-
-        data_dict = {}
-        for method in sum_square_errors.keys():
-            data_dict[method + "--rmse"] = [sum_square_errors[method]["rmse"]]
-            data_dict[method + "--n"] = [sum_square_errors[method]["n"]]
-            data_dict[method + "--total"] = [sum_square_errors[method]["total"]]
-        overall_result.append(pandas.DataFrame(data=data_dict))
+    pool = multiprocessing.Pool(n_processes)
+    overall_result = pool.starmap(do_interpolation_scoring, [
+        [
+            target_station_dict,
+            j,
+            target_station_dicts_len,
+            neighbour_station_dicts,
+            start_date,
+            end_date
+        ] for j, target_station_dict in enumerate(target_station_dicts)
+    ])
     logging.info("end targets")
 
     logging.info("overall results")
