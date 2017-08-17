@@ -137,8 +137,8 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, verbos
         method, value = column_name.split("--")
         methods.update([method])
     for method in methods:
-        overall_total = sum(overall_result_df[method + "--total"])
-        overall_n = sum(overall_result_df[method + "--n"])
+        overall_total = numpy.nansum(overall_result_df[method + "--total"])
+        overall_n = int(numpy.nansum(overall_result_df[method + "--n"]))
         overall_rmse = numpy.sqrt(overall_total / overall_n)
         score_str = "%.3f" % overall_rmse
         logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
