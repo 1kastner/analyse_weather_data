@@ -6,7 +6,7 @@ python3 -m interpolation.interpolate interpolate.py
 import datetime
 import random
 import logging
-import multiprocessing
+import itertools
 import sys
 import os
 
@@ -73,22 +73,18 @@ def score_interpolation_algorithm_at_date(scorer, date):
 
 
 def get_logger(interpolation_name):
-    log = multiprocessing.get_logger()
-
-    if len(log.handlers):  # everything is already set up
-        return log
+    log = logging.getLogger('interpolate')
 
     log.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(processName)s %(message)s')
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_{interpolation_name}_{pid}.log".format(
+    file_name = "interpolation_{date}_{interpolation_name}.log".format(
         interpolation_name=interpolation_name,
-        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
-        pid=multiprocessing.current_process().pid
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
     path_to_file_to_log_to = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -98,7 +94,10 @@ def get_logger(interpolation_name):
     file_handler = logging.FileHandler(path_to_file_to_log_to)
     file_handler.setFormatter(formatter)
     log.addHandler(file_handler)
-    logging.info("### Start new logging")
+
+    log.propagate = False
+    
+    log.info("### Start new logging")
     return log
 
 
@@ -106,14 +105,12 @@ def do_interpolation_scoring(
         target_station_dict,
         j,
         target_station_dicts_len,
-        ns,
+        neighbour_station_dicts,
         start_date,
         end_date,
-        interpolation_name
+        logger
 ):
-    neighbour_station_dicts = ns.neighbour_station_dicts
     target_station_name = target_station_dict["name"]
-    logger = get_logger(interpolation_name)
     logger.info("interpolate for " + target_station_name)
     logger.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
     logger.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
@@ -155,7 +152,7 @@ def do_interpolation_scoring(
     return pandas.DataFrame(data=data_dict)
 
 
-def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_processes=4, interpolation_name="NONE"):
+def score_algorithm(start_date, end_date, repository_parameters, limit=0, interpolation_name="NONE"):
     station_repository = StationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
@@ -173,23 +170,18 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, n_proc
     logger.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
 
-    pool = multiprocessing.Pool(n_processes)
-    ns = multiprocessing.Manager().Namespace()
-    ns.neighbour_station_dicts = neighbour_station_dicts
-    try:
-        overall_result = pool.starmap(do_interpolation_scoring, [
-            [
-                target_station_dict,
-                j,
-                target_station_dicts_len,
-                ns,
-                start_date,
-                end_date,
-                interpolation_name
-            ] for j, target_station_dict in enumerate(target_station_dicts)
-        ])
-    finally:
-        pool.close()
+    overall_result = itertools.starmap(do_interpolation_scoring, [
+        [
+            target_station_dict,
+            j,
+            target_station_dicts_len,
+            neighbour_station_dicts,
+            start_date,
+            end_date,
+            logger
+        ] for j, target_station_dict in enumerate(target_station_dicts)
+    ])
+
     logger.info("end targets")
 
     logger.info("overall results")
@@ -216,7 +208,7 @@ def demo():
     start_date = "2016-01-31"
     end_date = "2016-02-01"
     repository_parameters = get_repository_parameters(RepositoryParameter.ONLY_OUTDOOR_AND_SHADED)
-    score_algorithm(start_date, end_date, repository_parameters, limit=10, n_processes=2, interpolation_name="test")
+    score_algorithm(start_date, end_date, repository_parameters, limit=10, interpolation_name="test")
 
 
 if __name__ == "__main__":
