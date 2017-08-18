@@ -96,7 +96,7 @@ def get_logger(interpolation_name):
     log.addHandler(file_handler)
 
     log.propagate = False
-    
+
     log.info("### Start new logging")
     return log
 
