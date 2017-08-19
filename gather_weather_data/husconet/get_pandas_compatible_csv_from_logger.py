@@ -61,7 +61,7 @@ def load_stations():
         for station in HUSCONET_STATIONS:
             logging.debug(station)
             df, lat, lon = load_husconet_station(station)
-            f.write(station + "," + str(lat) + "," + str(lon))
+            f.write(station + "," + str(lat) + "," + str(lon) + "\n")
             csv_file_weather = os.path.join(PROCESSED_DATA_DIR, "husconet", station + ".csv")
             df.to_csv(csv_file_weather)
 

@@ -89,6 +89,37 @@ def load_husconet_radiation_average(start_date, end_date, excluded_husconet_stat
     return load_husconet_file(csv_file, start_date, end_date)
 
 
+class StationRepository:
+    """
+    Works like `filter_weather_data.filters.StationRepository` but for husconet stations
+    """
+    def __init__(self):
+        csv_file_positions = os.path.join(PROCESSED_DATA_DIR, "husconet_positions.csv")
+        self.meta_data = pandas.read_csv(csv_file_positions, index_col='station')
+
+    def load_husconet_station_as_station_dict(self, station_name, start_date=None, end_date=None):
+        station_df = load_husconet_station(station_name, start_date, end_date)
+        meta_data = self.meta_data.loc[station_name]
+        return {
+                "name": station_name,
+                "data_frame": station_df,
+                "meta_data": {
+                    "position": {
+                        "lat": meta_data.lat,
+                        "lon": meta_data.lon
+                    }
+                }
+            }
+
+    def load_all_stations(self, start_date=None, end_date=None, limit=0):
+        station_dicts = []
+        for i, station_name in enumerate(self.meta_data.index):
+            if limit != 0 and i >= limit:
+                break
+            station_dicts.append(self.load_husconet_station_as_station_dict(station_name, start_date, end_date))
+        return station_dicts
+
+
 def load_husconet_station(husconet_station_name, start_date=None, end_date=None, attribute_to_load=None):
     csv_file = os.path.join(
         PROCESSED_DATA_DIR,
@@ -109,7 +140,7 @@ def load_husconet_file(csv_file, start_date=None, end_date=None, attribute_to_ch
     :type csv_file: str
     :param attribute_to_check: Check whether this attribute is 0, more reliable than the '.empty' property
     :type attribute_to_check: str | None
-    :param attribute_to_load: Load only a single attribute from the csv
+    :param attribute_to_load: Load only a single attribute from the csv if provided, else load all existent attributes
     :type attribute_to_load: str | None
     :return: The loaded data frame within the time span
     :rtype: ``pandas.DataFrame``
