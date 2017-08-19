@@ -196,7 +196,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
         score_str = "%.3f" % overall_rmse
         logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
 
-    overall_result_df.to_csv("interpolation_result_{date}_{interpolation_name}.csv".format(
+    overall_result_df.to_csv("interpolation_result_husconet_{date}_{interpolation_name}.csv".format(
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
         interpolation_name=interpolation_name
     ))
