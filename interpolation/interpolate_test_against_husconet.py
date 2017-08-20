@@ -8,6 +8,7 @@ import logging
 import itertools
 import sys
 import os
+import random
 
 import numpy
 import pandas
@@ -156,7 +157,9 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
     station_repository = CrowdsoucingStationRepository(*repository_parameters)
     station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
 
-    neighbour_station_dicts = station_dicts
+    random.shuffle(station_dicts)
+    neighbour_station_dicts = station_dicts[:int(.7 * len(station_dicts))] # only use 70%
+
     target_station_dicts = HusconetStationRepository().load_all_stations(start_date, end_date, limit=limit)
 
     logger = get_logger(interpolation_name)

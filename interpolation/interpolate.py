@@ -158,7 +158,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
     # separate in two sets
     random.shuffle(station_dicts)
-    separator = 1 - int(.7 * len(station_dicts))  # 70% vs 30%
+    separator = int(.3 * len(station_dicts))  # 70% vs 30%
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
 
     logger = get_logger(interpolation_name)
