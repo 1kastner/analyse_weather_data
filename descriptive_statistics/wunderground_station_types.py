@@ -6,6 +6,7 @@ Runt it with
 for the main script.
 """
 
+import sys
 import os.path
 import logging
 import json
@@ -16,8 +17,35 @@ from . import WUNDERGROUND_RAW_DATA_DIR
 from . import FILTERED_STATIONS_DIR
 
 
+def setup_logger():
+    log = logging.getLogger('')
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    log.addHandler(console_handler)
+
+    path_to_file_to_log_to = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "log",
+        "wunderground_station_types.log"
+    )
+    file_handler = logging.FileHandler(path_to_file_to_log_to)
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+    logging.info("### Start new logging")
+    return log
+
+
 def get_software_type(station):
     """
+    Check day by day and return the first result.
+
+    Assumptions:
+    - The software does not change
+    - We can derive the hardware from the software
+    - So we can count netatmo stations and compare that number to the amount of other station types
     
     :param station: The station name
     :type station: str
@@ -55,11 +83,11 @@ def gather_statistics(private_weather_stations_file_name):
     station_repository = StationRepository(private_weather_stations_file_name)
     software_types = []
     stations_df = station_repository.get_all_stations()
-    print("total: ", len(stations_df))
+    logging.info("total: %i" % len(stations_df))
     for station in stations_df.index:
         software_types.append(get_software_type(station))
     for software_type, count in collections.Counter(software_types).items():
-        print(software_type, ":", count)
+        logging.info("  %s : %i" % (software_type, count))
 
 
 def run():
@@ -68,22 +96,19 @@ def run():
     only_outdoor = os.path.join(FILTERED_STATIONS_DIR, "station_dicts_outdoor.csv")
     outdoor_and_shaded = os.path.join(FILTERED_STATIONS_DIR, "station_dicts_shaded.csv")
 
-    print("start")
+    logging.info("start")
     gather_statistics(start)
-    print()
 
-    print("frequent_reports")
+    logging.info("frequent_reports")
     gather_statistics(frequent_reports)
-    print()
 
-    print("only_outdoor")
+    logging.info("only_outdoor")
     gather_statistics(only_outdoor)
-    print()
 
-    print("outdoor_and_shaded")
+    logging.info("outdoor_and_shaded")
     gather_statistics(outdoor_and_shaded)
-    print()
 
 
 if __name__ == "__main__":
+    setup_logger()
     run()

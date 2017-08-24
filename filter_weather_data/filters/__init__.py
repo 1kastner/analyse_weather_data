@@ -26,6 +26,8 @@ class StationRepository:
         
         :param private_weather_stations_file_name: Where to look up the station metadata
         """
+        if isinstance(private_weather_stations_file_name, tuple):
+            raise RuntimeError("need text-like object")
         if private_weather_stations_file_name is None:
             private_weather_stations_file_name = os.path.join(
                 PROCESSED_DATA_DIR,
@@ -82,8 +84,8 @@ class StationRepository:
                 station_dicts.append(station_dict)
                 logging.debug("load " + station_name)
             else:
-                self.stations_df.lat.loc[station_name] = numpy.nan
-        self.stations_df = self.stations_df[self.stations_df.lat.notnull()]
+                self.stations_df.lat.loc[station_name] = numpy.nan  # mark the station to be removed
+        self.stations_df = self.stations_df[self.stations_df.lat.notnull()]  # remove stations which no data
         logging.debug("loaded station_dicts: " + str(len(station_dicts)))
         return station_dicts
 

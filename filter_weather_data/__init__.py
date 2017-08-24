@@ -20,6 +20,12 @@ class RepositoryParameter(enum.Enum):
 
 
 def get_repository_parameters(name):
+    """
+
+    :param name: The name of the data kind
+    :type name: RepositoryParameter
+    :return:
+    """
     filtered_stations_dir = os.path.join(
         PROCESSED_DATA_DIR,
         "filtered_stations"
