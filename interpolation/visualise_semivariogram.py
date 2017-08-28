@@ -7,7 +7,7 @@ import datetime
 
 import numpy
 import pandas
-import matplotlib.pyplot as plt
+from matplotlib import pyplot
 import dateutil.parser
 
 from pykrige.ok import OrdinaryKriging
@@ -20,15 +20,15 @@ from filter_weather_data.filters import StationRepository
 
 def plot_variogram(X, Y, Z, title):
     ok = OrdinaryKriging(X, Y, Z, variogram_model='spherical', verbose=False, enable_plotting=False, nlags=8)
-    fig = plt.figure()
+    fig = pyplot.figure()
     ax = fig.add_subplot(111)
     ax.plot(ok.lags, ok.semivariance, 'ko-')
-    plt.ylabel("$\gamma(h)$")
-    plt.xlabel("$h$ (in km)")
-    plt.grid(color='.8')  # a very light gray
+    pyplot.ylabel("$\gamma(h)$")
+    pyplot.xlabel("$h$ (in km)")
+    pyplot.grid(color='.8')  # a very light gray
     fig.canvas.set_window_title(title)
     logging.debug("plotting preparation done")
-    plt.show()
+    pyplot.show()
 
 
 def convert_to_meter_distance(latitudes, longitudes):
@@ -47,6 +47,8 @@ def convert_to_meter_distance(latitudes, longitudes):
         this_point = geopy.Point(lat, lon)
         x_meter = geopy.distance.distance(geopy.Point(lat, min_lon), this_point).km
         y_meter = geopy.distance.distance(geopy.Point(min_lat, lon), this_point).km
+        logging.debug("convert {lat}:{lon} to {x_meter}:{y_meter}".format(lat=lat, lon=lon, x_meter=x_meter,
+                                                                          y_meter=y_meter))
         X.append(x_meter)
         Y.append(y_meter)
     return X, Y
@@ -102,6 +104,34 @@ def demo():
         plot_variogram(X, Y, Z, title)
 
 
+def demo2():
+    """
+    Shows that convert_to_meter_distance presents good results (edge cases not considered).
+
+    """
+    lat_lon_label_rows = [
+        (53.64159, 9.94502, "center"),
+        (53.84159, 9.94502, "north"),
+        (53.44159, 9.94502, "south"),
+        (53.64159, 9.74502, "west"),
+        (53.64159, 10.14502, "east")
+    ]
+    lats, lons, labels = [], [], []
+    for lat, lon, label in lat_lon_label_rows:
+        lats.append(lat)
+        lons.append(lon)
+        labels.append(label)
+
+    x_meters, y_meters = convert_to_meter_distance(lats, lons)
+
+    fig, ax = pyplot.subplots()
+    ax.scatter(x_meters, y_meters)
+    for x, y, label in zip(x_meters, y_meters, labels):
+        ax.annotate(label, (x, y))
+    pyplot.show()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     demo()
+    demo2()

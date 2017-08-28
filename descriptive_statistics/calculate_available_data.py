@@ -72,7 +72,10 @@ def gather_statistics(repository_parameter, start_date, end_date):
     availabilities = []
     station_dicts = station_repository.load_all_stations(start_date=start_date, end_date=end_date)
     logging.info("total: %i" % len(station_dicts))
-    for station_dict in station_dicts:
+    while True:
+        if len(station_dicts) == 0:
+            break
+        station_dict = station_dicts.pop()
         position = station_dict["meta_data"]["position"]
         station_dict["data_frame"] = sample_up(station_dict["data_frame"], start_date, end_date)
         row_result = {
