@@ -25,7 +25,7 @@ P_VALUE = .01
 CORRELATION_COEFFICIENT = .5
 
 
-def check_station(station_df, reference_temperature_df, reference_radiation_df):
+def check_station(station_df, reference_temperature_df, reference_radiation_df, just_check_correlation=False):
     """
     
     :param station_df: The station to check
@@ -57,6 +57,11 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df):
 
     # Is the station at an unshaded position?
     station_unshaded = (r_value > CORRELATION_COEFFICIENT and p_value < P_VALUE)
+
+    if just_check_correlation:
+        logging.debug("station: r = {r}, p = {p}".format(r=r_value, p=p_value))
+        logging.debug("unshaded" if station_unshaded else "shaded")
+        return r_value, p_value
 
     if station_unshaded:
         logging.debug("station unshaded: r = {r}, p = {p}".format(r=r_value, p=p_value))

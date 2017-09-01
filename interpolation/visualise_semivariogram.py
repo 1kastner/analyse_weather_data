@@ -1,4 +1,3 @@
-
 """
 
 """
@@ -18,17 +17,17 @@ from filter_weather_data import RepositoryParameter, get_repository_parameters
 from filter_weather_data.filters import StationRepository
 
 
-def plot_variogram(X, Y, Z, title):
+def plot_variogram(X, Y, Z, title=None, legend_entry=None):
     ok = OrdinaryKriging(X, Y, Z, variogram_model='spherical', verbose=False, enable_plotting=False, nlags=8)
-    fig = pyplot.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(ok.lags, ok.semivariance, 'ko-')
+    if title:
+        fig = pyplot.figure()
+    pyplot.plot(ok.lags, ok.semivariance, 'o-', label=legend_entry)
     pyplot.ylabel("$\gamma(h)$")
-    pyplot.xlabel("$h$ (in km)")
+    pyplot.xlabel("$h$ ($in$ $km$)")
     pyplot.grid(color='.8')  # a very light gray
-    fig.canvas.set_window_title(title)
+    if title:
+        fig.canvas.set_window_title(title)
     logging.debug("plotting preparation done")
-    pyplot.show()
 
 
 def convert_to_meter_distance(latitudes, longitudes):
@@ -61,19 +60,14 @@ def sample_up(df, start_date, end_date, decay):
     return df
 
 
-def load_data(repository_parameter, date):
-    start_date = dateutil.parser.parse(date) - datetime.timedelta(hours=1)  # first value to load
+def load_data(station_dicts, date):
+    start_date = dateutil.parser.parse(date) - datetime.timedelta(minutes=30)  # first value to load
     end_date = date  # load until this date (station repository adds some margin)
     t = date  # check the values at this given time
-    station_repository = StationRepository(*get_repository_parameters(repository_parameter))
-    station_dicts = station_repository.load_all_stations(
-        start_date,
-        end_date
-    )
+
     latitudes, longitudes, Z = [], [], []
     for station_dict in station_dicts:
         station_dict["data_frame"] = sample_up(station_dict["data_frame"], start_date, end_date, 30)  # 30 minutes decay
-        #for i, t in enumerate(station_dict["data_frame"].index):
 
         temperature = station_dict["data_frame"].loc[t].temperature
         if numpy.isnan(temperature):
@@ -87,21 +81,46 @@ def load_data(repository_parameter, date):
     return X, Y, Z
 
 
+def get_station_dicts(start_date, end_date):
+    # repository_parameter = RepositoryParameter.START
+    repository_parameter = RepositoryParameter.ONLY_OUTDOOR_AND_SHADED
+    station_repository = StationRepository(*get_repository_parameters(repository_parameter))
+    station_dicts = station_repository.load_all_stations(
+        start_date,
+        end_date
+    )
+    return station_dicts
+
+
+DATES = [
+    '2016-01-01T13:00',
+    '2016-02-01T13:00',
+    '2016-03-01T13:00',
+    '2016-04-01T13:00',
+    '2016-05-01T13:00',
+    '2016-06-01T13:00',
+    '2016-07-01T13:00',
+    '2016-08-01T13:00',
+    '2016-09-01T13:00',
+    '2016-10-01T13:00',
+    '2016-11-01T13:00',
+    '2016-12-01T13:00'
+]
+
+
+def germanize_iso_date(date):
+    return dateutil.parser.parse(date).strftime("%d.%m.%Y, %H:%M")
+
+
 def demo():
-    date = '2016-06-01T13:00'
-    #param = RepositoryParameter.START
-    param = RepositoryParameter.ONLY_OUTDOOR_AND_SHADED
-    X, Y, Z = load_data(param, date)
-    title = date + " " + param.value
-    print("title", title)
-    print("X", X)
-    print("Y", Y)
-    print("Z", Z)
-    print("Z min", min(Z))
-    print("Z max", max(Z))
-    print(len(Z))
-    if input("continue? too large Z values might eat up all your memory. (y) or other: ") == "y":
-        plot_variogram(X, Y, Z, title)
+    dates = DATES[:]
+    station_dicts = get_station_dicts("2016-01-01", "2016-12-31")
+
+    for date in dates:
+        X, Y, Z = load_data(station_dicts, date)
+        plot_variogram(X, Y, Z, legend_entry=germanize_iso_date(date))
+    pyplot.legend()
+    pyplot.show()
 
 
 def demo2():
@@ -134,4 +153,4 @@ def demo2():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     demo()
-    demo2()
+    # demo2()

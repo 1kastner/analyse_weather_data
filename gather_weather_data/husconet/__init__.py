@@ -55,7 +55,7 @@ class GermanWinterTime(datetime.tzinfo):
         return datetime.timedelta(0)
 
 
-def load_husconet_temperature_average(start_date, end_date, excluded_husconet_stations):
+def load_husconet_temperature_average(start_date, end_date, excluded_husconet_stations=None):
     if excluded_husconet_stations is not None:
         excluded_husconet_stations = list(excluded_husconet_stations)
         excluded_husconet_stations.sort()
@@ -72,7 +72,7 @@ def load_husconet_temperature_average(start_date, end_date, excluded_husconet_st
     return load_husconet_file(csv_file, start_date, end_date)
 
 
-def load_husconet_radiation_average(start_date, end_date, excluded_husconet_stations):
+def load_husconet_radiation_average(start_date, end_date, excluded_husconet_stations=None):
     if excluded_husconet_stations is not None:
         excluded_husconet_stations = list(excluded_husconet_stations)
         excluded_husconet_stations.sort()
