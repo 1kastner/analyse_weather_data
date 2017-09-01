@@ -140,6 +140,14 @@ def get_reference_interval(start_date, end_date, excluded_reference_stations):
                 daily_standard_deviation_mean,
                 daily_standard_deviation_std * 5
             )
+            logging.debug("minimum_temperature_mean {month_key}: {minimum_temperature_mean}"
+                          .format(month_key=month_key, minimum_temperature_mean=minimum_temperature_mean))
+            logging.debug("minimum_temperature_std * 5 {month_key}: {minimum_temperature_std5}"
+                          .format(month_key=month_key, minimum_temperature_std5=minimum_temperature_std * 5))
+            logging.debug("daily_standard_deviation_mean {month_key}: {daily_standard_deviation_mean}"
+                          .format(month_key=month_key, daily_standard_deviation_mean=daily_standard_deviation_mean))
+            logging.debug("daily_standard_deviation_std * 5 {month_key}: {daily_standard_deviation_std5}"
+                          .format(month_key=month_key, daily_standard_deviation_std5=daily_standard_deviation_std * 5))
     return result
 
 
