@@ -84,7 +84,7 @@ def gather_statistics(repository_parameter, start_date, end_date):
         start_date=start_date,
         end_date=end_date,
         limit_to_temperature=False,
-        #  limit=10  # for testing purposes
+        # limit=10  # for testing purposes
     )
     logging.info("total: %i" % len(station_dicts))
     stations_with_precipitation = set()
@@ -123,11 +123,11 @@ def gather_statistics(repository_parameter, start_date, end_date):
     )
     df_data = []
     for station_with_wind in stations_with_wind:
-        meta_info = station_repository.get_meta_info(stations_with_wind)
+        meta_info = station_repository.get_meta_info(station_with_wind)
         df_data.append({
             "station": station_with_wind,
-            "lat": meta_info.lat[0],
-            "lon": meta_info.lon[0]
+            "lat": meta_info.lat,
+            "lon": meta_info.lon
         })
     df = pandas.DataFrame(df_data)
     df.set_index("station", inplace=True)
@@ -140,11 +140,11 @@ def gather_statistics(repository_parameter, start_date, end_date):
     )
     df_data = []
     for station_with_precipitation in stations_with_precipitation:
-        meta_info = station_repository.get_meta_info(stations_with_precipitation)
+        meta_info = station_repository.get_meta_info(station_with_precipitation)
         df_data.append({
             "station": station_with_precipitation,
-            "lat": meta_info.lat[0],
-            "lon": meta_info.lon[0]
+            "lat": meta_info.lat,
+            "lon": meta_info.lon
         })
     df = pandas.DataFrame(df_data)
     df.set_index("station", inplace=True)
