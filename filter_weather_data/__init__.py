@@ -14,6 +14,7 @@ PROCESSED_DATA_DIR = os.path.join(
 
 class RepositoryParameter(enum.Enum):
     START = "start"
+    START_FULL_SENSOR = "start_full_sensor"
     FREQUENT_REPORTS = "frequent_reports"
     ONLY_OUTDOOR = "only_outdoor"
     ONLY_OUTDOOR_AND_SHADED = "only_outdoor_and_shaded"
@@ -35,6 +36,11 @@ def get_repository_parameters(name):
         return (
             os.path.join(filtered_stations_dir, "station_dicts_with_valid_position.csv"),
             os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_no_extreme_values")
+        )
+    if name == RepositoryParameter.START_FULL_SENSOR:
+        return (
+            os.path.join(filtered_stations_dir, "station_dicts_with_valid_position.csv"),
+            os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_not_extreme_full_sensor_data")
         )
     if name == RepositoryParameter.FREQUENT_REPORTS:
         return (

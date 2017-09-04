@@ -61,12 +61,18 @@ class StationRepository:
         return self.stations_df
 
     def get_meta_info(self, station):
+        """
+
+        :param station:
+        :return:
+        """
         stations_df = self.get_all_stations()
         return stations_df.loc[station]
 
-    def load_all_stations(self, start_date=None, end_date=None, time_zone=None, limit=0):
+    def load_all_stations(self, start_date=None, end_date=None, time_zone=None, limit=0, limit_to_temperature=True):
         """
-        
+
+        :param limit_to_temperature: Only consider temperature - saves memory but drops interesting data
         :param start_date: The earliest day which must be included (potentially earlier)
         :type start_date: str | datetime.datetime | None
         :param end_date: The latest day which must be included (potentially later)
@@ -79,7 +85,7 @@ class StationRepository:
         station_dicts = []
         logging.debug("using summary dir: " + self.summary_dir)
         for station_name, lat, lon in self.get_all_stations(limit).itertuples():
-            station_dict = self.load_station(station_name, start_date, end_date, time_zone)
+            station_dict = self.load_station(station_name, start_date, end_date, time_zone, limit_to_temperature)
             if station_dict is not None:
                 station_dicts.append(station_dict)
                 logging.debug("load " + station_name)
@@ -89,11 +95,12 @@ class StationRepository:
         logging.debug("loaded station_dicts: " + str(len(station_dicts)))
         return station_dicts
 
-    def load_station(self, station, start_date, end_date, time_zone=None):
+    def load_station(self, station, start_date, end_date, time_zone=None, limit_to_temperature=True):
         """
         This only looks at the dates and returns the corresponding summary (assuming naive dates, overlapping at 
         midnight is ignored).
         
+        :param limit_to_temperature: Only consider temperature - saves memory but drops interesting data
         :param station: The station to load
         :param start_date: The earliest day which must be included (potentially earlier)
         :type start_date: str | datetime.datetime | None
@@ -112,9 +119,13 @@ class StationRepository:
             ))
             return None
         csv_file = os.path.join(self.summary_dir, searched_station_summary_file_name)
+        if limit_to_temperature:
+            usecols = ["datetime", "temperature"]
+        else:
+            usecols = None  # that is the default value in the function declaration
         station_df = pandas.read_csv(
             csv_file,
-            usecols=["datetime", "temperature"],
+            usecols=usecols,
             index_col="datetime",
             parse_dates=["datetime"]
         )

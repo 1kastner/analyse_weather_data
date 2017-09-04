@@ -107,3 +107,4 @@ wunderground_raw_airport_data/
 interpolation/private_backup/
 interpolation/interpolation_result_*.csv
 descriptive_statistics/log/
+dwd_raw_data/
