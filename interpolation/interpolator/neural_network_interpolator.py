@@ -2,6 +2,7 @@
 
 """
 
+import logging
 import os.path
 
 import pandas
@@ -28,9 +29,11 @@ def cloud_cover_converter(val):
         raise RuntimeError(val + "not found")
 
 
-def load_data(file_name):
+def load_data(file_name, start_date, end_date):
     """
 
+    :param end_date:
+    :param start_date:
     :param file_name: File name, e.g. training_data.csv, evaluation_data.csv
     :return: (input_data, target) scikit-conform data
     """
@@ -46,6 +49,8 @@ def load_data(file_name):
         parse_dates=["datetime"],
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
+
+    data_df = data_df[start_date:end_date]
 
     for i in range(6):
         column_name = 'cloudcover_%i' % i
@@ -79,20 +84,26 @@ def load_data(file_name):
     return input_data, target
 
 
-def train(mlp_regressor):
-    input_data, target = load_data("training_data.csv")
+def train(mlp_regressor, start_date, end_date):
+    input_data, target = load_data("training_data.csv", start_date, end_date)
     mlp_regressor.fit(input_data, target)
     score = numpy.sqrt(mlp_regressor.score_mse(input_data, target))
-    print("Training Score Predicted: ", score)
+    print("Training RMSE: ", score)
 
 
-def evaluate(mlp_regressor):
-    input_data, target = load_data("evaluation_data.csv")
+def evaluate(mlp_regressor, start_date, end_date):
+    input_data, target = load_data("evaluation_data.csv", start_date, end_date)
     score = numpy.sqrt(mlp_regressor.score_mse(input_data, target))
-    print("Evaluation Score Predicted: ", score)
+    print("Evaluation RMSE: ", score)
 
 
 def run_experiment():
+    """
+
+    :param start_date:
+    :param end_date:
+    :return:
+    """
     mlp_regressor = MLPRegressor(
         hidden_layer_sizes=(10,),
         activation='relu',  # most likely linear effects
@@ -106,7 +117,8 @@ def run_experiment():
 
         random_state=None,
         tol=0.0001,
-        verbose=True,
+        #verbose=True,
+        verbose=False,
         warm_start=False,  # erase previous solution
 
         early_stopping=False,  # stop if no increase during validation
@@ -116,8 +128,14 @@ def run_experiment():
         beta_2=0.999,  # solver=adam
         epsilon=1e-08  # solver=adam
     )
-    train(mlp_regressor)
-    evaluate(mlp_regressor)
+
+    start_date = "2016-01-01"
+    for month in range(1, 11):
+        last_month_learned = "2016-%02i" % month
+        logging.info("learn until month %s" % last_month_learned)
+        train(mlp_regressor, start_date, last_month_learned)
+        month_not_yet_learned = "2016-%02i" % (month + 1)
+        evaluate(mlp_regressor,month_not_yet_learned, month_not_yet_learned)
     print(mlp_regressor.get_params())
 
 
