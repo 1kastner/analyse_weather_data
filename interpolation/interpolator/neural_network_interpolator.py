@@ -102,15 +102,14 @@ def evaluate(mlp_regressor, start_date, end_date):
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
-def run_experiment():
+def run_experiment(hidden_layer_sizes):
     """
 
-    :param start_date:
-    :param end_date:
+    :param hidden_layer_sizes: The hidden layers, e.g. (40, 10)
     :return:
     """
     mlp_regressor = MLPRegressor(
-        hidden_layer_sizes=(40, 10),
+        hidden_layer_sizes=hidden_layer_sizes,
         activation='relu',  # most likely linear effects
         solver='adam',  # good choice for large data sets
         alpha=0.0001,  # L2 penalty (regularization term) parameter.
@@ -134,17 +133,20 @@ def run_experiment():
         epsilon=1e-08  # solver=adam
     )
 
+    setup_logger()
     start_date = "2016-01-01"
+    logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
     for month in range(1, 11):
         last_month_learned = "2016-%02i" % month
         logging.info("learn until month %s" % last_month_learned)
         train(mlp_regressor, start_date, last_month_learned)
         month_not_yet_learned = "2016-%02i" % (month + 1)
+        logging.info("validate with month %s" % month_not_yet_learned)
         evaluate(mlp_regressor,month_not_yet_learned, month_not_yet_learned)
     logging.info(mlp_regressor.get_params())
 
 
-def get_logger(interpolation_name):
+def setup_logger():
     log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
@@ -155,11 +157,11 @@ def get_logger(interpolation_name):
     log.addHandler(console_handler)
 
     file_name = "interpolation_{date}_neural_network.log".format(
-        interpolation_name=interpolation_name,
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
     path_to_file_to_log_to = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
+        os.pardir,
         "log",
         file_name
     )
@@ -174,5 +176,4 @@ def get_logger(interpolation_name):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    run_experiment()
+    run_experiment((40, 10))
