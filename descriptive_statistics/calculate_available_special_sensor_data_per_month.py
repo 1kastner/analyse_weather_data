@@ -144,7 +144,7 @@ def gather_statistics(repository_parameter, start_date, end_date):
         df_data.append({
             "station": station_with_precipitation,
             "lat": meta_info.lat,
-            "lon": meta_info.lon
+            "lon": meta_info.lon,
         })
     df = pandas.DataFrame(df_data)
     df.set_index("station", inplace=True)

@@ -76,13 +76,22 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     figure = pyplot.figure()
     figure.canvas.set_window_title(title)
 
-    axis_1 = figure.add_subplot(111)
+    axis_2 = figure.add_subplot(111)
+    axis_2.yaxis.tick_right()
+    axis_2.yaxis.set_label_position("right")
+    axis_2.set_ylabel("Niederschlag (mm/Tag)")
+    axis_2.plot(dwd_station_df.index, dwd_station_df.precipitation, label="DWD Tageswerte", alpha=.8)
+    axis_2.fill_between(dwd_station_df.index, dwd_station_df.precipitation, facecolors="b", interpolate=True, alpha=.8)
+    _, max_precipitation = axis_2.get_ylim()
+    axis_2.set_ylim((0, max_precipitation))
+
+    axis_1 = figure.add_subplot(111, sharex=axis_2, frameon=False)
     for station_dict in station_dicts:
         logging.debug("prepare plotting " + station_dict["name"])
         station_df = station_dict['data_frame']
         station_df = insert_nans(station_df)  # discontinue line if gap is too big
         station_df = clean_data(station_df, monthly_dwd_df)
-        axis_1.plot(station_df.index, station_df.precipitation, ".", alpha=.5)
+        axis_1.plot(station_df.index, station_df.precipitation, ".", alpha=.6)
 
     axis_1.set_xlabel('2016')
     axis_1.xaxis.set_major_locator(mdates.MonthLocator())
@@ -91,19 +100,11 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     _, max_precipitation = axis_1.get_ylim()
     axis_1.set_ylim((0, max_precipitation))
 
-    logging.debug("load dwd")
-    axis_2 = figure.add_subplot(111, sharex=axis_1, frameon=False)
-    axis_2.yaxis.tick_right()
-    axis_2.yaxis.set_label_position("right")
-    axis_2.set_ylabel("Niederschlag (mm/Tag)")
-    axis_2.plot(dwd_station_df.index, dwd_station_df.precipitation, label="DWD Tageswerte", alpha=.3)
-    axis_2.fill_between(dwd_station_df.index, dwd_station_df.precipitation, facecolors="b", interpolate=True, alpha=.3)
-    _, max_precipitation = axis_2.get_ylim()
-    axis_2.set_ylim((0, max_precipitation))
+
 
     axis_1.margins(x=0)  # remove margins for both axes
 
-    blue_patch = mpatches.Patch(color='blue', label='DWD Tageswerte', alpha=.3)
+    blue_patch = mpatches.Patch(color='blue', label='DWD Tageswerte', alpha=.8)
     grey_dot = mlines.Line2D([], [], color='grey', marker='.', linestyle=" ",
                              label='private Wetterstation Stundenwerte')
     pyplot.legend(handles=[blue_patch, grey_dot])
@@ -111,7 +112,7 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     pyplot.show()
 
 
-def plot_whole_filtering_pipe():
+def plot():
     start = get_repository_parameters(RepositoryParameter.START_FULL_SENSOR)
     start_date = "2016-01-01"
     end_date = "2016-12-31"
@@ -120,4 +121,4 @@ def plot_whole_filtering_pipe():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    plot_whole_filtering_pipe()
+    plot()

@@ -54,6 +54,13 @@ def _search_summary_file(station, start_date, end_date):
 
 
 def load_airport(airport_name, start_date, end_date):
+    """
+
+    :param airport_name: e.g. EDDH
+    :param start_date:
+    :param end_date:
+    :return:
+    """
     if isinstance(start_date, str):
         start_date = dateutil.parser.parse(start_date)
     if isinstance(end_date, str):
@@ -74,7 +81,11 @@ def load_airport(airport_name, start_date, end_date):
     )
     station_df = station_df.tz_localize("UTC").tz_convert(GermanWinterTime()).tz_localize(None)
 
-    df_year = pandas.DataFrame(index=pandas.date_range(start_date, end_date + datetime.timedelta(days=1), freq='T', name="datetime"))
+    if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0:
+        # '2016-31-12' actually means until one minute before midnight, so it includes the last day
+        end_date = end_date + datetime.timedelta(days=1) - datetime.timedelta(minutes=1)
+
+    df_year = pandas.DataFrame(index=pandas.date_range(start_date, end_date, freq='T', name="datetime"))
     station_df = station_df.join([df_year], how="outer")  # insert nans everywhere, also in the beginning.
     station_df = station_df.groupby(station_df.index).first()  # remove duplicates
     station_df.temperature = station_df.temperature.ffill(limit=30)  # 30min decay
