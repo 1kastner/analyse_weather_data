@@ -77,8 +77,11 @@ def load_data(file_name, start_date, end_date):
     # based on information served by airport + learned patterns, so no data from the same private weather station itself
     input_df = data_df
     for attribute in data_df.columns:
-        if not attribute.endswith("_eddh"):
+        if not attribute.endswith("_eddh") and attribute not in ("lat", "lon"):
             input_df = input_df.drop(attribute, 1)
+
+    logging.debug(input_df.head())
+    logging.debug(target_df.head())
 
     # only numpy arrays conform with scikit-learn
     input_data = input_df.values
@@ -102,7 +105,7 @@ def evaluate(mlp_regressor, start_date, end_date):
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
-def run_experiment(hidden_layer_sizes):
+def run_experiment(hidden_layer_sizes, number_months=12):
     """
 
     :param hidden_layer_sizes: The hidden layers, e.g. (40, 10)
@@ -136,13 +139,13 @@ def run_experiment(hidden_layer_sizes):
     setup_logger(hidden_layer_sizes)
     start_date = "2016-01-01"
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
-    for month in range(1, 11):
+    for month in range(1, number_months):
         last_month_learned = "2016-%02i" % month
         logging.info("learn until month %s" % last_month_learned)
         train(mlp_regressor, start_date, last_month_learned)
         month_not_yet_learned = "2016-%02i" % (month + 1)
         logging.info("validate with month %s" % month_not_yet_learned)
-        evaluate(mlp_regressor,month_not_yet_learned, month_not_yet_learned)
+        evaluate(mlp_regressor, month_not_yet_learned, month_not_yet_learned)
     logging.info(mlp_regressor.get_params())
 
 
@@ -177,4 +180,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((40, 10))
+    run_experiment((40, 10), number_months=2)

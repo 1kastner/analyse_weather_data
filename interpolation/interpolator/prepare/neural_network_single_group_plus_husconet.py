@@ -15,39 +15,11 @@ from filter_weather_data import PROCESSED_DATA_DIR
 
 from interpolation import load_airport
 
-
-def load_eddh(start_date, end_date):
-    """
-    loads EDDH data
-
-    :param start_date:
-    :param end_date:
-    :return:
-    """
-    eddh_df = load_airport("EDDH", start_date, end_date)
-    eddh_df = eddh_df.add_suffix("_eddh")
-    return eddh_df
+from .neural_network_single_group import fill_missing_eddh_values
+from .neural_network_single_group import load_eddh
 
 
-def fill_missing_eddh_values(common_df):
-    """
-    in case of missing data just presume that the old data are still valid.
-    airport data should always be back online quickly.
-
-    :param common_df: airport and private data merged
-    :return: continued airport data
-    """
-    common_df.cloudcover_eddh.fillna(method='pad', inplace=True)
-    common_df.dewpoint_eddh.fillna(method='pad', inplace=True)
-    common_df.pressure_eddh.fillna(method='pad', inplace=True)
-    common_df.temperature_eddh.fillna(method='pad', inplace=True)
-    common_df.winddirection_eddh.fillna(method='pad', inplace=True)
-    common_df.windspeed_eddh.fillna(method='pad', inplace=True)
-    common_df = common_df[pandas.notnull(common_df.lat)]  # remove eddh without pws entries
-    return common_df
-
-
-def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
+def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     """
 
     :param station_dicts: The stations to use
@@ -65,6 +37,18 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
         station_df['lat'] = position["lat"]
         station_df['lon'] = position["lon"]
         common_df = pandas.concat([common_df, station_df])
+
+    while True:
+        if len(husconet_dicts) == 0:
+            break
+        husconet_dict = husconet_dicts.pop()
+        station_df = husconet_dict["data_frame"]
+        position = husconet_dict["meta_data"]["position"]
+        station_df['lat'] = position["lat"]
+        station_df['lon'] = position["lon"]
+        station_df = station_df.add_suffix("_" + husconet_dict["name"])
+        common_df = pandas.concat([common_df, station_df])
+
     common_df.sort_index(inplace=True)
     common_df = fill_missing_eddh_values(common_df)
     common_df.to_csv(output_csv_file)
