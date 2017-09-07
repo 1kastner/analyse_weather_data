@@ -56,9 +56,7 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
     """
 
     common_df = eddh_df
-    while True:
-        if len(station_dicts) == 0:
-            break
+    while len(station_dicts):
         station_dict = station_dicts.pop()
         station_df = station_dict["data_frame"]
         position = station_dict["meta_data"]["position"]
