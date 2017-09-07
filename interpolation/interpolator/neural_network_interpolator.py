@@ -2,8 +2,10 @@
 
 """
 
+import sys
 import logging
 import os.path
+import datetime
 
 import pandas
 import numpy
@@ -71,7 +73,7 @@ def load_data(file_name, start_date, end_date):
     # try to predict temperature
     target_df = pandas.DataFrame(data_df.temperature)
 
-    # based on information served by airport + learned patterns, so no data from the same private weather station
+    # based on information served by airport + learned patterns, so no data from the same private weather station itself
     input_df = data_df
     for attribute in data_df.columns:
         if not attribute.endswith("_eddh"):
@@ -88,13 +90,13 @@ def train(mlp_regressor, start_date, end_date):
     input_data, target = load_data("training_data.csv", start_date, end_date)
     mlp_regressor.fit(input_data, target)
     score = numpy.sqrt(mlp_regressor.score_mse(input_data, target))
-    print("Training RMSE: ", score)
+    logging.info("Training RMSE: %.3f" % score)
 
 
 def evaluate(mlp_regressor, start_date, end_date):
     input_data, target = load_data("evaluation_data.csv", start_date, end_date)
     score = numpy.sqrt(mlp_regressor.score_mse(input_data, target))
-    print("Evaluation RMSE: ", score)
+    logging.info("Evaluation RMSE: %.3f" % score)
 
 
 def run_experiment():
@@ -136,8 +138,38 @@ def run_experiment():
         train(mlp_regressor, start_date, last_month_learned)
         month_not_yet_learned = "2016-%02i" % (month + 1)
         evaluate(mlp_regressor,month_not_yet_learned, month_not_yet_learned)
-    print(mlp_regressor.get_params())
+    logging.info(mlp_regressor.get_params())
+
+
+def get_logger(interpolation_name):
+    log = logging.getLogger('')
+
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    log.addHandler(console_handler)
+
+    file_name = "interpolation_{date}_neural_network.log".format(
+        interpolation_name=interpolation_name,
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
+    )
+    path_to_file_to_log_to = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "log",
+        file_name
+    )
+    file_handler = logging.FileHandler(path_to_file_to_log_to)
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+
+    log.propagate = False
+
+    log.info("### Start new logging")
+    return log
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     run_experiment()
