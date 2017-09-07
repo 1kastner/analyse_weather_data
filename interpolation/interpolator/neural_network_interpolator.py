@@ -133,7 +133,7 @@ def run_experiment(hidden_layer_sizes):
         epsilon=1e-08  # solver=adam
     )
 
-    setup_logger()
+    setup_logger(hidden_layer_sizes)
     start_date = "2016-01-01"
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
     for month in range(1, 11):
@@ -146,7 +146,7 @@ def run_experiment(hidden_layer_sizes):
     logging.info(mlp_regressor.get_params())
 
 
-def setup_logger():
+def setup_logger(hidden_layer_sizes):
     log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
@@ -156,7 +156,8 @@ def setup_logger():
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_neural_network.log".format(
+    file_name = "interpolation_{date}_neural_network_{hidden_layer_sizes}.log".format(
+        hidden_layer_sizes="-".join([str(obj) for obj in hidden_layer_sizes]),
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
     path_to_file_to_log_to = os.path.join(
