@@ -55,7 +55,7 @@ def run():
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
-        limit=5  # for testing purposes
+        # limit=5  # for testing purposes
     )
 
     random.shuffle(station_dicts)
@@ -68,7 +68,7 @@ def run():
     husconet_dicts = HusconetStationRepository().load_all_stations(
         start_date,
         end_date,
-        limit=1  # for testing purposes
+        # limit=1  # for testing purposes
     )
     training_csv_file = os.path.join(
         PROCESSED_DATA_DIR,

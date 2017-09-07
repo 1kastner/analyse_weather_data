@@ -37,7 +37,7 @@ def load_data(file_name, start_date, end_date):
 
     :param end_date:
     :param start_date:
-    :param file_name: File name, e.g. training_data.csv, evaluation_data.csv
+    :param file_name: File name, e.g. training_data_husconet.csv, evaluation_data_husconet.csv
     :return: (input_data, target) scikit-conform data
     """
     csv_file = os.path.join(
@@ -80,8 +80,8 @@ def load_data(file_name, start_date, end_date):
         if not attribute.endswith("_eddh") and attribute not in ("lat", "lon"):
             input_df = input_df.drop(attribute, 1)
 
-    # logging.debug(input_df.head())
-    # logging.debug(target_df.head())
+    logging.debug(input_df.head())
+    logging.debug(target_df.head())
 
     # only numpy arrays conform with scikit-learn
     input_data = input_df.values
