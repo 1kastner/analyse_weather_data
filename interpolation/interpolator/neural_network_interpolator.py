@@ -110,7 +110,7 @@ def run_experiment():
     :return:
     """
     mlp_regressor = MLPRegressor(
-        hidden_layer_sizes=(10,),
+        hidden_layer_sizes=(40, 10),
         activation='relu',  # most likely linear effects
         solver='adam',  # good choice for large data sets
         alpha=0.0001,  # L2 penalty (regularization term) parameter.
