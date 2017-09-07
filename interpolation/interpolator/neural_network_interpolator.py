@@ -80,8 +80,8 @@ def load_data(file_name, start_date, end_date):
         if not attribute.endswith("_eddh") and attribute not in ("lat", "lon"):
             input_df = input_df.drop(attribute, 1)
 
-    # logging.debug(input_df.head())
-    # logging.debug(target_df.head())
+    logging.debug(input_df.head(1))
+    logging.debug(target_df.head(1))
 
     # only numpy arrays conform with scikit-learn
     input_data = input_df.values

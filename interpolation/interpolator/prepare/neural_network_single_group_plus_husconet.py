@@ -68,14 +68,14 @@ def run():
     husconet_dicts = HusconetStationRepository().load_all_stations(
         start_date,
         end_date,
-        # limit=1  # for testing purposes
+        # limit=3  # for testing purposes
     )
     training_csv_file = os.path.join(
         PROCESSED_DATA_DIR,
         "neural_networks",
         "training_data_husconet.csv"
     )
-    join_to_big_vector(training_csv_file, training_dicts, husconet_dicts, eddh_df)
+    join_to_big_vector(training_csv_file, training_dicts, husconet_dicts[:], eddh_df)
 
     evaluation_csv_file = os.path.join(
         PROCESSED_DATA_DIR,

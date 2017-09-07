@@ -6,6 +6,7 @@ import sys
 import logging
 import os.path
 import datetime
+import re
 
 import pandas
 import numpy
@@ -71,17 +72,23 @@ def load_data(file_name, start_date, end_date):
     # neural networks can not deal with NaN values
     data_df.dropna(axis='index', how="any", inplace=True)
 
-    # try to predict temperature
-    target_df = pandas.DataFrame(data_df.temperature)
+    # try to predict temperature of husconet stations
+    targets = []
+    for attribute in data_df.columns:
+        if re.search("temperature_[A-Z][A-Z][A-Z]", attribute):
+            targets.append(attribute)
+    target_df = pandas.concat([data_df[target] for target in targets], axis=1)
 
-    # based on information served by airport + learned patterns, so no data from the same private weather station itself
+    # based on information served by airport + private weather stations
     input_df = data_df
     for attribute in data_df.columns:
-        if not attribute.endswith("_eddh") and attribute not in ("lat", "lon"):
+        if attribute in targets:
             input_df = input_df.drop(attribute, 1)
 
-    logging.debug(input_df.head())
-    logging.debug(target_df.head())
+    logging.debug("input_df")
+    logging.debug(input_df.head(1))
+    logging.debug("target_df")
+    logging.debug(target_df.head(1))
 
     # only numpy arrays conform with scikit-learn
     input_data = input_df.values
@@ -91,7 +98,7 @@ def load_data(file_name, start_date, end_date):
 
 
 def train(mlp_regressor, start_date, end_date):
-    input_data, target = load_data("training_data.csv", start_date, end_date)
+    input_data, target = load_data("training_data_husconet.csv", start_date, end_date)
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
@@ -99,7 +106,7 @@ def train(mlp_regressor, start_date, end_date):
 
 
 def evaluate(mlp_regressor, start_date, end_date):
-    input_data, target = load_data("evaluation_data.csv", start_date, end_date)
+    input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
@@ -159,7 +166,7 @@ def setup_logger(hidden_layer_sizes):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_neural_network_{hidden_layer_sizes}.log".format(
+    file_name = "interpolation_{date}_neural_network_husconet_{hidden_layer_sizes}.log".format(
         hidden_layer_sizes="-".join([str(obj) for obj in hidden_layer_sizes]),
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
