@@ -137,12 +137,11 @@ def run_experiment(hidden_layer_sizes, number_months=12):
     )
 
     setup_logger(hidden_layer_sizes)
-    start_date = "2016-01-01"
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
     for month in range(1, number_months):
-        last_month_learned = "2016-%02i" % month
-        logging.info("learn until month %s" % last_month_learned)
-        train(mlp_regressor, start_date, last_month_learned)
+        month_learned = "2016-%02i" % month
+        logging.info("learn month %s" % month_learned)
+        train(mlp_regressor, month_learned, month_learned)
         month_not_yet_learned = "2016-%02i" % (month + 1)
         logging.info("validate with month %s" % month_not_yet_learned)
         evaluate(mlp_regressor, month_not_yet_learned, month_not_yet_learned)
