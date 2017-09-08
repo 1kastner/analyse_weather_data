@@ -78,13 +78,13 @@ def run():
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
-        limit=5  # for testing purposes
+        # limit=5  # for testing purposes
     )
 
     husconet_dicts = HusconetStationRepository().load_all_stations(
         start_date,
         end_date,
-        limit=3  # for testing purposes
+        # limit=3  # for testing purposes
     )
     random.shuffle(husconet_dicts)
     split_point = int(len(husconet_dicts) * .7)
