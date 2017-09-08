@@ -100,6 +100,7 @@ class StationRepository:
     def load_husconet_station_as_station_dict(self, station_name, start_date=None, end_date=None):
         station_df = load_husconet_station(station_name, start_date, end_date)
         meta_data = self.meta_data.loc[station_name]
+        logging.debug("load {station}".format(station=station_name))
         return {
                 "name": station_name,
                 "data_frame": station_df,
@@ -117,6 +118,7 @@ class StationRepository:
             if limit != 0 and i >= limit:
                 break
             station_dicts.append(self.load_husconet_station_as_station_dict(station_name, start_date, end_date))
+        logging.debug("loaded husconet_dicts: %i" % len(station_dicts))
         return station_dicts
 
 

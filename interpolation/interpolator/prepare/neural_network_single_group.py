@@ -43,7 +43,10 @@ def fill_missing_eddh_values(common_df):
     common_df.temperature_eddh.fillna(method='pad', inplace=True)
     common_df.winddirection_eddh.fillna(method='pad', inplace=True)
     common_df.windspeed_eddh.fillna(method='pad', inplace=True)
-    common_df = common_df[pandas.notnull(common_df.lat)]  # remove eddh without pws entries
+    if "lat" in common_df.columns:
+        common_df = common_df[pandas.notnull(common_df.lat)]  # remove eddh without pws entries
+    elif "lat_pws" in common_df.columns:
+        common_df = common_df[pandas.notnull(common_df.lat_pws)]  # remove eddh without pws entries
     return common_df
 
 

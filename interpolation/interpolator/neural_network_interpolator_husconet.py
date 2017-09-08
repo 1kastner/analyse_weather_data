@@ -33,7 +33,7 @@ def cloud_cover_converter(val):
         raise RuntimeError(val + "not found")
 
 
-def load_data(file_name, start_date, end_date):
+def load_data(file_name, start_date, end_date, verbose=False):
     """
 
     :param end_date:
@@ -73,22 +73,19 @@ def load_data(file_name, start_date, end_date):
     data_df.dropna(axis='index', how="any", inplace=True)
 
     # try to predict temperature of husconet stations
-    targets = []
-    for attribute in data_df.columns:
-        if re.search("temperature_[A-Z][A-Z][A-Z]", attribute):
-            targets.append(attribute)
-    target_df = pandas.concat([data_df[target] for target in targets], axis=1)
+    target_df = pandas.DataFrame(data_df.temperature_husconet)
 
     # based on information served by airport + private weather stations
     input_df = data_df
     for attribute in data_df.columns:
-        if attribute in targets:
-            input_df = input_df.drop(attribute, 1)
+        if attribute.endswith("_husconet") and attribute not in ("lat_husconet", "lon_husconet"):
+            input_df.drop(attribute, 1, inplace=True)
 
-    logging.debug("input_df")
-    logging.debug(input_df.head(1))
-    logging.debug("target_df")
-    logging.debug(target_df.head(1))
+    if verbose:
+        logging.debug("input_df")
+        logging.debug(input_df.head(1))
+        logging.debug("target_df")
+        logging.debug(target_df.head(1))
 
     # only numpy arrays conform with scikit-learn
     input_data = input_df.values
@@ -97,16 +94,16 @@ def load_data(file_name, start_date, end_date):
     return input_data, target
 
 
-def train(mlp_regressor, start_date, end_date):
-    input_data, target = load_data("training_data_husconet.csv", start_date, end_date)
+def train(mlp_regressor, start_date, end_date, verbose=False):
+    input_data, target = load_data("training_data_husconet.csv", start_date, end_date, verbose=verbose)
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
     logging.info("Training RMSE: %.3f" % score)
 
 
-def evaluate(mlp_regressor, start_date, end_date):
-    input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date)
+def evaluate(mlp_regressor, start_date, end_date, verbose=False):
+    input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date, verbose=verbose)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
@@ -144,12 +141,11 @@ def run_experiment(hidden_layer_sizes, number_months=12):
     )
 
     setup_logger(hidden_layer_sizes)
-    start_date = "2016-01-01"
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
     for month in range(1, number_months):
-        last_month_learned = "2016-%02i" % month
-        logging.info("learn until month %s" % last_month_learned)
-        train(mlp_regressor, start_date, last_month_learned)
+        month_learned = "2016-%02i" % month
+        logging.info("learn month %s" % month_learned)
+        train(mlp_regressor, month_learned, month_learned, verbose=(month == 1))
         month_not_yet_learned = "2016-%02i" % (month + 1)
         logging.info("validate with month %s" % month_not_yet_learned)
         evaluate(mlp_regressor, month_not_yet_learned, month_not_yet_learned)
