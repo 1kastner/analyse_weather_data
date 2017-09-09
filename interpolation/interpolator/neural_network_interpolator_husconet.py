@@ -42,7 +42,8 @@ def load_data(file_name, start_date, end_date, verbose=False):
     :return: (input_data, target) scikit-conform data
     """
     csv_file = os.path.join(
-        PROCESSED_DATA_DIR,
+        #PROCESSED_DATA_DIR,
+        "/export/scratch/1kastner", #ccblade16
         "neural_networks",
         file_name
     )
@@ -60,11 +61,24 @@ def load_data(file_name, start_date, end_date, verbose=False):
         column_name = 'cloudcover_%i' % i
         data_df[column_name] = (data_df["cloudcover_eddh"] == i)
 
-    data_df["month"] = data_df.index.month
-    data_df["hour"] = data_df.index.hour
+    df_month = pandas.get_dummies(data_df.index.month, prefix="month")
+    #data_df["month"] = data_df.index.month
+
+    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
+    #data_df["hour"] = data_df.index.hour
+
+    data_df.reset_index(inplace=True, drop=True)
+
+    data_df = pandas.concat([
+        data_df, 
+        #df_month, 
+        df_hour
+    ], axis=1)
 
     # this is now binary encoded, so no need for it anymore
     del data_df["cloudcover_eddh"]
+
+    data_df["windgust_eddh"].fillna(0, inplace=True)
 
     # drop columns with NaN, e.g. precipitation at airport is currently not reported at all
     data_df.dropna(axis='columns', how="all", inplace=True)
@@ -78,7 +92,10 @@ def load_data(file_name, start_date, end_date, verbose=False):
     # based on information served by airport + private weather stations
     input_df = data_df
     for attribute in data_df.columns:
-        if attribute.endswith("_husconet") and attribute not in ("lat_husconet", "lon_husconet"):
+        if (
+                attribute.endswith("_husconet") 
+                and attribute not in ("lat_husconet", "lon_husconet")
+        ):
             input_df.drop(attribute, 1, inplace=True)
 
     if verbose:
@@ -96,6 +113,9 @@ def load_data(file_name, start_date, end_date, verbose=False):
 
 def train(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("training_data_husconet.csv", start_date, end_date, verbose=verbose)
+    if verbose:
+        logging.debug("input_data[0]: %s" % str(input_data[0]))
+        logging.debug("target[0]: %s" % str(target[0]))
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
@@ -109,7 +129,7 @@ def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
-def run_experiment(hidden_layer_sizes, number_months=12):
+def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
     """
 
     :param hidden_layer_sizes: The hidden layers, e.g. (40, 10)
@@ -121,7 +141,7 @@ def run_experiment(hidden_layer_sizes, number_months=12):
         solver='adam',  # good choice for large data sets
         alpha=0.0001,  # L2 penalty (regularization term) parameter.
         batch_size='auto',
-        learning_rate_init=0.001,
+        learning_rate_init=learning_rate,
         max_iter=200,
 
         shuffle=True,
@@ -183,4 +203,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((40, 10), number_months=2)
+    run_experiment((3, 2), number_months=2)

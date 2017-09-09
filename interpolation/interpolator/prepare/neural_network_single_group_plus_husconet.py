@@ -93,14 +93,16 @@ def run():
     logging.info("evaluation stations: %s" % [station["name"] for station in evaluation_dicts])
 
     evaluation_csv_file = os.path.join(
-        PROCESSED_DATA_DIR,
+        #PROCESSED_DATA_DIR,
+        "/export/scratch/1kastner", #only for ccblade
         "neural_networks",
         "evaluation_data_husconet.csv"
     )
     join_to_big_vector(evaluation_csv_file, station_dicts[:], evaluation_dicts, eddh_df)
 
     training_csv_file = os.path.join(
-        PROCESSED_DATA_DIR,
+        #PROCESSED_DATA_DIR,
+        "/export/scratch/1kastner", #only for ccblade
         "neural_networks",
         "training_data_husconet.csv"
     )

@@ -59,11 +59,25 @@ def load_data(file_name, start_date, end_date, verbose=False):
         column_name = 'cloudcover_%i' % i
         data_df[column_name] = (data_df["cloudcover_eddh"] == i)
 
-    data_df["month"] = data_df.index.month
-    data_df["hour"] = data_df.index.hour
+    df_month = pandas.get_dummies(data_df.index.month, prefix="month_")
+    #data_df["month"] = data_df.index.month
+
+    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour_")
+    #data_df["hour"] = data_df.index.hour
+
+    data_df.reset_index(inplace=True)
+
+    data_df = pandas.concat([
+        data_df, 
+        #df_month, 
+        df_hour], 
+    axis=1)
 
     # this is now binary encoded, so no need for it anymore
     del data_df["cloudcover_eddh"]
+
+    # no data means no windgusts were measured, not the absence of measurement instruments
+    data_df["windgust_eddh"].fillna(0, inplace=True)
 
     # drop columns with NaN, e.g. precipitation at airport is currently not reported at all
     data_df.dropna(axis='columns', how="all", inplace=True)
@@ -77,7 +91,12 @@ def load_data(file_name, start_date, end_date, verbose=False):
     # based on information served by airport + learned patterns, so no data from the same private weather station itself
     input_df = data_df
     for attribute in data_df.columns:
-        if not attribute.endswith("_eddh") and attribute not in ("lat", "lon"):
+        if (
+                not attribute.endswith("_eddh") 
+                and attribute not in ("lat", "lon") 
+                and not attribute.startswith("hour_")
+                and not attribute.startswith("month_")
+        ):
             input_df.drop(attribute, 1, inplace=True)
 
     if verbose:
@@ -106,7 +125,7 @@ def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
-def run_experiment(hidden_layer_sizes, number_months=12):
+def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
     """
 
     :param hidden_layer_sizes: The hidden layers, e.g. (40, 10)
@@ -118,7 +137,7 @@ def run_experiment(hidden_layer_sizes, number_months=12):
         solver='adam',  # good choice for large data sets
         alpha=0.0001,  # L2 penalty (regularization term) parameter.
         batch_size='auto',
-        learning_rate_init=0.001,
+        learning_rate_init=learning_rate,
         max_iter=200,
 
         shuffle=True,
@@ -180,4 +199,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((40, 10), number_months=2)
+    run_experiment((5, 5), number_months=2)
