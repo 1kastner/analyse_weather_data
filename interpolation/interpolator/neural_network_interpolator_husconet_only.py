@@ -15,9 +15,6 @@ from sklearn.metrics import mean_absolute_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
 
-pandas.set_option("display.max_columns", 500)
-pandas.set_option("display.max_rows", 10)
-
 
 def cloud_cover_converter(val):
     if val in ["SKC", "CLR", "NSC", "CAVOC"]:  # 0 octas
@@ -44,37 +41,18 @@ def load_data(file_name, start_date, end_date, verbose=False):
     :param file_name: File name, e.g. training_data_husconet.csv, evaluation_data_husconet.csv
     :return: (input_data, target) scikit-conform data
     """
+    csv_file = os.path.join(
+        #PROCESSED_DATA_DIR,
+        "/export/scratch/1kastner", #ccblade16
+        "neural_networks",
+        file_name
+    )
 
-    if start_date == end_date:
-        csv_file = os.path.join(
-            #PROCESSED_DATA_DIR,
-            "/export/scratch/1kastner", #ccblade16
-            "neural_networks",
-            file_name[:-4] + "_" + start_date + ".csv"
-        )
-        if not os.path.isfile(csv_file):
-
-            csv_file = os.path.join(
-                #PROCESSED_DATA_DIR,
-                "/export/scratch/1kastner", #ccblade16
-                "neural_networks",
-                file_name
-            )
-    else:
-        csv_file = os.path.join(
-            #PROCESSED_DATA_DIR,
-            "/export/scratch/1kastner", #ccblade16
-            "neural_networks",
-            file_name
-        )
-
-    logging.debug("use file: %s" % csv_file)
     data_df = pandas.read_csv(
         csv_file,
         index_col="datetime",
         parse_dates=["datetime"],
-        converters={"cloudcover_eddh": cloud_cover_converter},
-        #nrows=6000010  # for testing, reaches into the beginning of february
+        converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
     data_df = data_df[start_date:end_date]
@@ -92,31 +70,21 @@ def load_data(file_name, start_date, end_date, verbose=False):
     data_df.reset_index(inplace=True, drop=True)
 
     data_df = pandas.concat([
-        data_df,
-        #df_month,
+        data_df, 
+        #df_month, 
         df_hour
     ], axis=1)
 
     # this is now binary encoded, so no need for it anymore
     del data_df["cloudcover_eddh"]
 
-    data_df.windgust_eddh.fillna(0, inplace=True)
+    data_df["windgust_eddh"].fillna(0, inplace=True)
 
-    # drop columns with only NaN values, e.g. precipitation at airport is currently not reported at all
-
-    column_is_all_null = data_df.isnull().all(axis=0)
-    logging.debug("dropping columns %s" % str(data_df.columns[column_is_all_null]))
-    logging.debug("dropping row example %s" % str(data_df.head(5)))
+    # drop columns with NaN, e.g. precipitation at airport is currently not reported at all
     data_df.dropna(axis='columns', how="all", inplace=True)
 
     # neural networks can not deal with NaN values
-    row_contains_any_null_df = data_df.loc[data_df.isnull().any(axis=1)]
-    logging.debug("dropping rows %s" % str(row_contains_any_null_df))
-    logging.debug("lost data in percent: %i" % (len(row_contains_any_null_df) / len(data_df) * 100))
     data_df.dropna(axis='index', how="any", inplace=True)
-
-    if verbose:
-        logging.debug("data_df before input/target split: %s" % str(data_df.head(1)))
 
     # try to predict temperature of husconet stations
     target_df = pandas.DataFrame(data_df.temperature_husconet)
@@ -144,7 +112,7 @@ def load_data(file_name, start_date, end_date, verbose=False):
 
 
 def train(mlp_regressor, start_date, end_date, verbose=False):
-    input_data, target = load_data("training_data_husconet.csv", start_date, end_date, verbose=verbose)
+    input_data, target = load_data("training_data_husconet_only.csv", start_date, end_date, verbose=verbose)
     if verbose:
         logging.debug("input_data[0]: %s" % str(input_data[0]))
         logging.debug("target[0]: %s" % str(target[0]))
@@ -155,7 +123,7 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
 
 
 def evaluate(mlp_regressor, start_date, end_date, verbose=False):
-    input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date, verbose=verbose)
+    input_data, target = load_data("evaluation_data_husconet_only.csv", start_date, end_date, verbose=verbose)
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_absolute_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
@@ -194,8 +162,6 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
 
     setup_logger(hidden_layer_sizes)
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
-    logging.info("number_months=%i" % number_months)
-    logging.info("learning_rate=%i" % learning_rate)
     for month in range(1, number_months):
         month_learned = "2016-%02i" % month
         logging.info("learn month %s" % month_learned)
@@ -216,7 +182,7 @@ def setup_logger(hidden_layer_sizes):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_neural_network_husconet_{hidden_layer_sizes}.log".format(
+    file_name = "interpolation_{date}_neural_network_husconet_only_{hidden_layer_sizes}.log".format(
         hidden_layer_sizes="-".join([str(obj) for obj in hidden_layer_sizes]),
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
@@ -237,4 +203,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((3, ), number_months=2)
+    run_experiment((3, 2), number_months=2)

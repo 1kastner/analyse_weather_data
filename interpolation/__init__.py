@@ -88,5 +88,5 @@ def load_airport(airport_name, start_date, end_date):
     df_year = pandas.DataFrame(index=pandas.date_range(start_date, end_date, freq='T', name="datetime"))
     station_df = station_df.join([df_year], how="outer")  # insert nans everywhere, also in the beginning.
     station_df = station_df.groupby(station_df.index).first()  # remove duplicates
-    station_df.temperature = station_df.temperature.ffill(limit=30)  # 30min decay
+    # station_df.temperature = station_df.temperature.ffill(limit=30)  # 30min decay
     return station_df
