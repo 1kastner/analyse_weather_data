@@ -84,12 +84,22 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     logging.debug("airport + pws + husconet df info: %s" % get_info(common_df))
     logging.debug("airport + pws + husconet df info: %s" % str(common_df.head(1)))
 
-    #common_df.sort_index(inplace=True)
+    common_df.sort_index(inplace=True)
 
     common_df = fill_missing_eddh_values(common_df)
 
     logging.debug("shortly before saving df info: %s" % get_info(common_df))
-    common_df.to_csv(output_csv_file)
+
+    for year in common_df.index.year.unique():
+        year_key = str(year)
+        year_df = common_df.loc[year_key:year_key]
+        logging.debug("deal with year %s" % year_key)
+        for month in year_df.index.month.unique():
+            month_key = str(year) + "-" + str(month)
+            logging.debug("deal with month %s" % month_key)
+            month_df = year_df.loc[month_key:month_key]
+            logging.debug("start saving %s" % month_key)
+            month_df.to_csv(output_csv_file[:-4] + month_key + ".csv")
 
 
 def run():
@@ -103,13 +113,13 @@ def run():
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
-        # limit=5  # for testing purposes
+        limit=5  # for testing purposes
     )
 
     husconet_dicts = HusconetStationRepository().load_all_stations(
         start_date,
         end_date,
-        # limit=3  # for testing purposes
+        limit=3  # for testing purposes
     )
     random.shuffle(husconet_dicts)
     split_point = int(len(husconet_dicts) * .7)
@@ -122,7 +132,7 @@ def run():
         #PROCESSED_DATA_DIR,
         "/export/scratch/1kastner", #only for ccblade
         "neural_networks",
-        "evaluation_data_husconet_2.csv"
+        "evaluation_data_husconet.csv"
     )
     join_to_big_vector(evaluation_csv_file, station_dicts[:], evaluation_dicts, eddh_df)
 
@@ -131,7 +141,7 @@ def run():
         #PROCESSED_DATA_DIR,
         "/export/scratch/1kastner", #only for ccblade
         "neural_networks",
-        "training_data_husconet_2.csv"
+        "training_data_husconet.csv"
     )
     join_to_big_vector(training_csv_file, station_dicts, training_dicts, eddh_df)
     logging.debug("done")
