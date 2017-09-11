@@ -148,7 +148,7 @@ class StationRepository:
                 # before_start_df.info()
             station_df = station_df[start_date:]
         if end_date is not None:
-            after_end_date = (end_date + datetime.timedelta(days=1))
+            after_end_date = (end_date + datetime.timedelta(days=1) - datetime.timedelta(minutes=1))
             after_end_df = station_df[after_end_date:]
             if not after_end_df.empty or after_end_df.temperature.count() > 0:
                 pass

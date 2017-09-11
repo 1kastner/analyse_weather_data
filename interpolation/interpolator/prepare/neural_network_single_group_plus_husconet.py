@@ -10,6 +10,7 @@ import os
 import random
 import logging
 import io
+import platform
 
 import pandas
 
@@ -21,6 +22,11 @@ from gather_weather_data.husconet import StationRepository as HusconetStationRep
 from interpolation.interpolator.prepare.neural_network_single_group import fill_missing_eddh_values
 from interpolation.interpolator.prepare.neural_network_single_group import load_eddh
 
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
+    
 
 def get_info(df):
     buf = io.StringIO()
@@ -99,12 +105,13 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
             logging.debug("deal with month %s" % month_key)
             month_df = year_df.loc[month_key:month_key]
             logging.debug("start saving %s" % month_key)
-            month_df.to_csv(output_csv_file[:-4] + month_key + ".csv")
+            month_df.to_csv(output_csv_file[:-4] + "_" + month_key + ".csv")
 
 
-def run():
+def run(testing=False):
     start_date = "2016-01-01"
-    end_date = "2016-12-31"
+    end_date = "2016-12-31" if not testing else "2016-03-31"
+
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
         #RepositoryParameter.START_FULL_SENSOR
@@ -113,13 +120,13 @@ def run():
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
-        limit=5  # for testing purposes
+        limit=0 if not testing else 5  # for testing purposes
     )
 
     husconet_dicts = HusconetStationRepository().load_all_stations(
         start_date,
         end_date,
-        limit=3  # for testing purposes
+        limit=0 if not testing else 3  # for testing purposes
     )
     random.shuffle(husconet_dicts)
     split_point = int(len(husconet_dicts) * .7)
@@ -129,8 +136,7 @@ def run():
 
     logging.debug("prepare evaluation")
     evaluation_csv_file = os.path.join(
-        #PROCESSED_DATA_DIR,
-        "/export/scratch/1kastner", #only for ccblade
+        PROCESSED_DATA_DIR,
         "neural_networks",
         "evaluation_data_husconet.csv"
     )
@@ -138,8 +144,7 @@ def run():
 
     logging.debug("prepare training")
     training_csv_file = os.path.join(
-        #PROCESSED_DATA_DIR,
-        "/export/scratch/1kastner", #only for ccblade
+        PROCESSED_DATA_DIR,
         "neural_networks",
         "training_data_husconet.csv"
     )
@@ -149,4 +154,6 @@ def run():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    run()
+    run(
+        #testing=True
+    )
