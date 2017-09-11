@@ -6,7 +6,7 @@ import sys
 import logging
 import os.path
 import datetime
-import re
+import platform
 
 import pandas
 import numpy
@@ -14,6 +14,11 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
 
 
 def cloud_cover_converter(val):
@@ -42,8 +47,7 @@ def load_data(file_name, start_date, end_date, verbose=False):
     :return: (input_data, target) scikit-conform data
     """
     csv_file = os.path.join(
-        #PROCESSED_DATA_DIR,
-        "/export/scratch/1kastner", #ccblade16
+        PROCESSED_DATA_DIR,
         "neural_networks",
         file_name
     )

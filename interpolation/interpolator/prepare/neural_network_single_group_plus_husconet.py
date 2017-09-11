@@ -101,7 +101,7 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
         year_df = common_df.loc[year_key:year_key]
         logging.debug("deal with year %s" % year_key)
         for month in year_df.index.month.unique():
-            month_key = str(year) + "-" + str(month)
+            month_key = str(year) + "-" + "%02i" % month
             logging.debug("deal with month %s" % month_key)
             month_df = year_df.loc[month_key:month_key]
             logging.debug("start saving %s" % month_key)
@@ -130,7 +130,7 @@ def run(testing=False):
     )
     random.shuffle(husconet_dicts)
     split_point = int(len(husconet_dicts) * .7)
-    training_dicts, evaluation_dicts = husconet_dicts[:split_point],husconet_dicts[split_point:]
+    training_dicts, evaluation_dicts = husconet_dicts[:split_point], husconet_dicts[split_point:]
     logging.info("training stations: %s" % [station["name"] for station in training_dicts])
     logging.info("evaluation stations: %s" % [station["name"] for station in evaluation_dicts])
 

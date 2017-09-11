@@ -21,16 +21,13 @@ from interpolation.interpolator.prepare.neural_network_single_group import fill_
 from interpolation.interpolator.prepare.neural_network_single_group import load_eddh
 
 
-def join_to_big_vector(output_csv_file,  husconet_dicts, eddh_df):
+def join_to_big_vector(husconet_dicts, eddh_df):
     """
 
     :param husconet_dicts: The stations to compare to
     :param output_csv_file: Where to save the joined data to
     :return:
     """
-
-    common_df = eddh_df
-    logging.debug("common_df with airport: %s" % str(common_df.head(1)))
 
     husconet_dfs = []
     while len(husconet_dicts):
@@ -49,7 +46,7 @@ def join_to_big_vector(output_csv_file,  husconet_dicts, eddh_df):
     logging.debug("provided by HUSCONET: %s" % str(big_husconet_df.head(1)))
     big_husconet_df.sort_index(inplace=True)
 
-    common_df = common_df.join(big_husconet_df, how="outer")
+    common_df = big_husconet_df.join(eddh_df, how="left")
     logging.debug("common_df with airport and husconet: %s" % str(common_df.head(1)))
 
     common_df.sort_index(inplace=True)
@@ -58,7 +55,7 @@ def join_to_big_vector(output_csv_file,  husconet_dicts, eddh_df):
 
     logging.debug("isnull: %s" % str(common_df[common_df.isnull().any(axis=1)]))
 
-    common_df.to_csv(output_csv_file)
+    return common_df
 
 
 def run():
@@ -79,20 +76,20 @@ def run():
     logging.info("evaluation stations: %s" % [station["name"] for station in evaluation_dicts])
 
     evaluation_csv_file = os.path.join(
-        #PROCESSED_DATA_DIR,
-        "/export/scratch/1kastner", #only for ccblade
+        PROCESSED_DATA_DIR,
         "neural_networks",
         "evaluation_data_husconet_only.csv"
     )
-    join_to_big_vector(evaluation_csv_file, evaluation_dicts, eddh_df)
+    common_df = join_to_big_vector(evaluation_dicts, eddh_df)
+    common_df.to_csv(evaluation_csv_file)
 
     training_csv_file = os.path.join(
-        #PROCESSED_DATA_DIR,
-        "/export/scratch/1kastner", #only for ccblade
+        PROCESSED_DATA_DIR,
         "neural_networks",
         "training_data_husconet_only.csv"
     )
-    join_to_big_vector(training_csv_file, training_dicts, eddh_df)
+    common_df = join_to_big_vector(training_dicts, eddh_df)
+    common_df.to_csv(training_csv_file)
 
 
 if __name__ == "__main__":
