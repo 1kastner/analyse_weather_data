@@ -26,7 +26,7 @@ from interpolation.interpolator.prepare.neural_network_single_group import load_
 if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
                                                # on a network drive
     PROCESSED_DATA_DIR = "/export/scratch/1kastner"
-    
+
 
 def get_info(df):
     buf = io.StringIO()
@@ -154,6 +154,7 @@ def run(testing=False):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    production_environment = platform.uname()[1].startswith("ccblade")
     run(
-        #testing=True
+        testing=(not production_environment)
     )

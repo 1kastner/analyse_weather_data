@@ -6,7 +6,7 @@ import sys
 import logging
 import os.path
 import datetime
-import re
+import platform
 
 import pandas
 import numpy
@@ -14,6 +14,12 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
+
 
 pandas.set_option("display.max_columns", 500)
 pandas.set_option("display.max_rows", 10)
@@ -45,36 +51,29 @@ def load_data(file_name, start_date, end_date, verbose=False):
     :return: (input_data, target) scikit-conform data
     """
 
+    # default
+    csv_file = os.path.join(
+        PROCESSED_DATA_DIR,
+        "neural_networks",
+        file_name
+    )
     if start_date == end_date:
-        csv_file = os.path.join(
-            #PROCESSED_DATA_DIR,
-            "/export/scratch/1kastner", #ccblade16
+        test_csv_file = os.path.join(
+            PROCESSED_DATA_DIR,
             "neural_networks",
             file_name[:-4] + "_" + start_date + ".csv"
         )
-        if not os.path.isfile(csv_file):
-
-            csv_file = os.path.join(
-                #PROCESSED_DATA_DIR,
-                "/export/scratch/1kastner", #ccblade16
-                "neural_networks",
-                file_name
-            )
-    else:
-        csv_file = os.path.join(
-            #PROCESSED_DATA_DIR,
-            "/export/scratch/1kastner", #ccblade16
-            "neural_networks",
-            file_name
-        )
+        monthly_file_exists = os.path.isfile(test_csv_file)
+        logging.debug("check if file exists: %s -- %s" % (test_csv_file, monthly_file_exists))
+        if monthly_file_exists:
+            csv_file = test_csv_file
 
     logging.debug("use file: %s" % csv_file)
     data_df = pandas.read_csv(
         csv_file,
         index_col="datetime",
         parse_dates=["datetime"],
-        converters={"cloudcover_eddh": cloud_cover_converter},
-        #nrows=6000010  # for testing, reaches into the beginning of february
+        converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
     data_df = data_df[start_date:end_date]
