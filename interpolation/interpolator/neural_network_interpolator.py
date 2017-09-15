@@ -11,7 +11,7 @@ import platform
 import pandas
 import numpy
 from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
 
@@ -125,7 +125,7 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
 def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("evaluation_data.csv", start_date, end_date, verbose=verbose)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
