@@ -48,7 +48,11 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     station_dfs = []
     while len(station_dicts):
         station_dict = station_dicts.pop()
+        logging.debug("work on %s" % station_dict["name"])
         station_df = station_dict["data_frame"]
+        for attribute in station_df.columns:
+            if attribute not in ["temperature", "humidity", "dewpoint"]:
+                station_df.drop(attribute, axis=1, inplace=True)
         position = station_dict["meta_data"]["position"]
         station_df['lat'] = position["lat"]
         station_df['lon'] = position["lon"]
@@ -109,17 +113,18 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
 
 
 def run(testing=False):
-    start_date = "2016-01-01"
-    end_date = "2016-12-31" if not testing else "2016-03-31"
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59" if not testing else "2016-03-31"
 
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
-        #RepositoryParameter.START_FULL_SENSOR
-        RepositoryParameter.START
+        RepositoryParameter.START_FULL_SENSOR
+        #RepositoryParameter.START
     ))
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
+        limit_to_temperature=False,
         limit=0 if not testing else 5  # for testing purposes
     )
 

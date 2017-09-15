@@ -6,13 +6,22 @@ import sys
 import logging
 import os.path
 import datetime
+import platform
 
 import pandas
 import numpy
 from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
+
+pandas.set_option("display.max_columns", 500)
+pandas.set_option("display.max_rows", 10)
 
 
 def cloud_cover_converter(val):
@@ -46,6 +55,8 @@ def load_data(file_name, start_date, end_date, verbose=False):
         file_name
     )
 
+    logging.debug("load file: %s" % csv_file)
+
     data_df = pandas.read_csv(
         csv_file,
         index_col="datetime",
@@ -53,30 +64,29 @@ def load_data(file_name, start_date, end_date, verbose=False):
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
-    data_df = data_df[start_date:end_date]
+    data_df = data_df.loc[start_date:end_date]
+    #logging.debug("data df: %s" % data_df.describe())
 
-    for i in range(6):
-        column_name = 'cloudcover_%i' % i
-        data_df[column_name] = (data_df["cloudcover_eddh"] == i)
-
-    #df_month = pandas.get_dummies(data_df.index.month, prefix="month")
-    data_df["month"] = data_df.index.month
+    cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh_dummy")
+    data_df.drop("cloudcover_eddh", axis=1, inplace=True)
+    #logging.debug("cloud cover: %s" % cloud_cover_df.describe())
 
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-    #data_df["hour"] = data_df.index.hour
+    #logging.debug("hours: %s" % df_hour.describe())
 
     data_df.reset_index(inplace=True, drop=True)
+    cloud_cover_df.reset_index(inplace=True, drop=True)
+    df_hour.reset_index(inplace=True)
 
     data_df = pandas.concat([
-        data_df, 
-        #df_month, 
-        df_hour
+        data_df,
+        df_hour,
+        cloud_cover_df,
     ], axis=1)
 
-    # this is now binary encoded, so no need for it anymore
-    del data_df["cloudcover_eddh"]
+    logging.debug("concatenated: %s" % data_df.describe())
 
-    data_df["windgust_eddh"].fillna(0, inplace=True)
+    data_df.windgust_eddh.fillna(0, inplace=True)
 
     # drop columns with NaN, e.g. precipitation at airport is currently not reported at all
     data_df.dropna(axis='columns', how="all", inplace=True)
@@ -95,6 +105,7 @@ def load_data(file_name, start_date, end_date, verbose=False):
                 and attribute not in ("lat", "lon") 
                 and not attribute.startswith("hour_") 
                 and not attribute.startswith("month_")
+                and not "cloudcover" in attribute
         ):
             input_df.drop(attribute, 1, inplace=True)
 
@@ -116,14 +127,14 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
         logging.debug("target[0]: %s" % str(target[0]))
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Training RMSE: %.3f" % score)
 
 
 def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("evaluation_data_filtered.csv", start_date, end_date, verbose=verbose)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
 
 
@@ -201,4 +212,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((5, 5), number_months=2)
+    run_experiment((3,), number_months=2)

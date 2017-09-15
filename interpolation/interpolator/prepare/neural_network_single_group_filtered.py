@@ -9,6 +9,7 @@ PROCESSED_DATA_DIR/neural_networks/training_data_filtered.csv
 import os
 import random
 import logging
+import platform
 
 import pandas
 
@@ -20,6 +21,10 @@ from filter_weather_data import PROCESSED_DATA_DIR
 from interpolation.interpolator.prepare.neural_network_single_group import load_eddh
 from interpolation.interpolator.prepare.neural_network_single_group import fill_missing_eddh_values
 
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
 
 
 def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
@@ -33,7 +38,11 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
     common_df = eddh_df
     while len(station_dicts):
         station_dict = station_dicts.pop()
+        logging.debug("work on %s" % station_dict["name"])
         station_df = station_dict["data_frame"]
+        for attribute in station_df.columns:
+            if attribute not in ["temperature", "humidity", "dewpoint"]:
+                station_df.drop(attribute, axis=1, inplace=True)
         position = station_dict["meta_data"]["position"]
         station_df['lat'] = position["lat"]
         station_df['lon'] = position["lon"]
@@ -44,16 +53,18 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
 
 
 def run():
-    start_date = "2016-01-01"
-    end_date = "2016-12-31"
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59"
+
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
-        RepositoryParameter.ONLY_OUTDOOR_AND_SHADED
+        RepositoryParameter.ONLY_OUTDOOR_AND_SHADED_FULL_SENSOR
     ))
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
-        # limit=5  # for testing purposes
+        # limit=5,  # for testing purposes
+        limit_to_temperature=False
     )
 
     random.shuffle(station_dicts)

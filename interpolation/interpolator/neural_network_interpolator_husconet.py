@@ -11,7 +11,7 @@ import platform
 import pandas
 import numpy
 from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
 
@@ -76,28 +76,27 @@ def load_data(file_name, start_date, end_date, verbose=False):
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
-    data_df = data_df[start_date:end_date]
+    data_df = data_df.loc[start_date:end_date]
+    #logging.debug("data df: %s" % data_df.describe())
 
-    for i in range(6):
-        column_name = 'cloudcover_%i' % i
-        data_df[column_name] = (data_df["cloudcover_eddh"] == i)
-
-    df_month = pandas.get_dummies(data_df.index.month, prefix="month")
-    #data_df["month"] = data_df.index.month
+    cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh")
+    data_df.drop("cloudcover_eddh", axis=1, inplace=True)
+    #logging.debug("cloud cover: %s" % cloud_cover_df.describe())
 
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-    #data_df["hour"] = data_df.index.hour
+    #logging.debug("hours: %s" % df_hour.describe())
 
     data_df.reset_index(inplace=True, drop=True)
+    cloud_cover_df.reset_index(inplace=True, drop=True)
+    df_hour.reset_index(inplace=True)
 
     data_df = pandas.concat([
         data_df,
-        #df_month,
-        df_hour
+        df_hour,
+        cloud_cover_df,
     ], axis=1)
 
-    # this is now binary encoded, so no need for it anymore
-    del data_df["cloudcover_eddh"]
+    logging.debug("concatenated: %s" % data_df.describe())
 
     data_df.windgust_eddh.fillna(0, inplace=True)
 
@@ -105,13 +104,13 @@ def load_data(file_name, start_date, end_date, verbose=False):
 
     column_is_all_null = data_df.isnull().all(axis=0)
     logging.debug("dropping columns %s" % str(data_df.columns[column_is_all_null]))
-    logging.debug("dropping row example %s" % str(data_df.head(5)))
+    logging.debug("dropping example %s" % str(data_df.head(5)))
     data_df.dropna(axis='columns', how="all", inplace=True)
 
     # neural networks can not deal with NaN values
     row_contains_any_null_df = data_df.loc[data_df.isnull().any(axis=1)]
     logging.debug("dropping rows %s" % str(row_contains_any_null_df))
-    logging.debug("lost data in percent: %i" % (len(row_contains_any_null_df) / len(data_df) * 100))
+    logging.debug("lost data in percent: %f" % (len(row_contains_any_null_df) / len(data_df) * 100))
     data_df.dropna(axis='index', how="any", inplace=True)
 
     if verbose:
@@ -126,7 +125,9 @@ def load_data(file_name, start_date, end_date, verbose=False):
         if (
                 attribute.endswith("_husconet") 
                 and attribute not in ("lat_husconet", "lon_husconet")
+                and "cloudcover" not in attribute
         ):
+            logging.debug("attribute not part of input: %s" % attribute)
             input_df.drop(attribute, 1, inplace=True)
 
     if verbose:
@@ -149,14 +150,14 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
         logging.debug("target[0]: %s" % str(target[0]))
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Training RMSE: %.3f" % score)
 
 
 def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date, verbose=verbose)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
 
 

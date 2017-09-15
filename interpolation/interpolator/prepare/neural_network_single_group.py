@@ -5,6 +5,7 @@ pws -> pws
 uses PROCESSED_DATA_DIR/neural_networks/[training,evaluation]_data.csv
 """
 
+import platform
 import os
 import random
 import logging
@@ -17,6 +18,11 @@ from filter_weather_data import RepositoryParameter
 from filter_weather_data import PROCESSED_DATA_DIR
 
 from interpolation import load_airport
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
 
 
 def load_eddh(start_date, end_date):
@@ -67,6 +73,9 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
     while len(station_dicts):
         station_dict = station_dicts.pop()
         station_df = station_dict["data_frame"]
+        for attribute in station_df.columns:
+            if attribute not in ["temperature", "humidity", "dewpoint"]:
+                station_df.drop(attribute, axis=1, inplace=True)
         position = station_dict["meta_data"]["position"]
         station_df['lat'] = position["lat"]
         station_df['lon'] = position["lon"]
@@ -77,14 +86,17 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
 
 
 def run():
-    start_date = "2016-01-01"
-    end_date = "2016-12-31"
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59"
     eddh_df = load_eddh(start_date, end_date)
-    station_repository = StationRepository(*get_repository_parameters(RepositoryParameter.START_FULL_SENSOR))
+    station_repository = StationRepository(*get_repository_parameters(
+        RepositoryParameter.START_FULL_SENSOR
+    ))
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
         # limit=5  # for testing purposes
+        limit_to_temperature=False
     )
 
     random.shuffle(station_dicts)

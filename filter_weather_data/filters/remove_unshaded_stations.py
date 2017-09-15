@@ -34,13 +34,18 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df, 
     :return: Is the station at a shaded place with high probability?
     """
 
+    logging.debug("number of general observations: %i" % len(station_df))
     temp_df = station_df.join(reference_temperature_df, how='left', rsuffix="_reference_temperature")
     delta_temperature = (temp_df.temperature - temp_df.temperature_reference_temperature).rename("temperature_delta")
     delta_df = pandas.concat([temp_df, delta_temperature], axis=1)
 
     delta_df = delta_df.join(reference_radiation_df, how='left')
     df_only_sunshine = delta_df[(delta_df.radiation > SUNSHINE_MINIMUM_THRESHOLD)]
-    df_only_sunshine = df_only_sunshine.dropna(axis=0, how='any')
+    logging.debug("sunshine only: %s" % df_only_sunshine.describe())
+
+    examine_me_df = pandas.concat([df_only_sunshine.temperature_delta, df_only_sunshine.radiation], axis=1)
+    examine_me_df.dropna(axis=0, how="any", inplace=True)
+    logging.debug("compare these values: %s" % examine_me_df.describe())
 
     if df_only_sunshine.empty:
         logging.warning("No entries found for sunshine. Did you check for infrequent reporting?")
@@ -48,8 +53,8 @@ def check_station(station_df, reference_temperature_df, reference_radiation_df, 
 
     try:
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(
-            df_only_sunshine.temperature_delta.values,
-            df_only_sunshine.radiation.values
+            examine_me_df.temperature_delta.values,
+            examine_me_df.radiation.values
         )
     except ValueError as ve:
         logging.warning("Linear regression led to error: ", ve)
@@ -108,7 +113,7 @@ def filter_stations(station_dicts, start_date, end_date):
 
 def demo():
     start_date = "2016-01-01T00:00:00"
-    end_date = "2016-12-31T00:00:00"
+    end_date = "2016-01-30T23:59:00"
     time_zone = GermanWinterTime()
     stations = ['ISCHENEF11', 'IHAMBURG22']
     station_repository = StationRepository()

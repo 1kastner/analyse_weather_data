@@ -9,6 +9,7 @@ Uses:
 import os
 import random
 import logging
+import platform
 
 import pandas
 
@@ -19,6 +20,11 @@ from filter_weather_data import PROCESSED_DATA_DIR
 from gather_weather_data.husconet import StationRepository as HusconetStationRepository
 from interpolation.interpolator.prepare.neural_network_single_group import fill_missing_eddh_values
 from interpolation.interpolator.prepare.neural_network_single_group import load_eddh
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
 
 
 def join_to_big_vector(husconet_dicts, eddh_df):
@@ -34,7 +40,7 @@ def join_to_big_vector(husconet_dicts, eddh_df):
         husconet_dict = husconet_dicts.pop()
         station_df = husconet_dict["data_frame"]
         for attribute in station_df.columns:
-            if attribute != "temperature":
+            if attribute not in ["temperature", "humidity"]:
                 station_df.drop(attribute, 1, inplace=True)
         position = husconet_dict["meta_data"]["position"]
         station_df['lat'] = position["lat"]
@@ -59,8 +65,8 @@ def join_to_big_vector(husconet_dicts, eddh_df):
 
 
 def run():
-    start_date = "2016-01-01"
-    end_date = "2016-12-31"
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59"
     eddh_df = load_eddh(start_date, end_date)
 
     husconet_dicts = HusconetStationRepository().load_all_stations(

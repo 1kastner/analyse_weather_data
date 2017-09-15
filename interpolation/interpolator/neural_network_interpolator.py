@@ -6,6 +6,7 @@ import sys
 import logging
 import os.path
 import datetime
+import platform
 
 import pandas
 import numpy
@@ -13,6 +14,14 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
+
+
+if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
+                                               # on a network drive
+    PROCESSED_DATA_DIR = "/export/scratch/1kastner"
+
+pandas.set_option("display.max_columns", 500)
+pandas.set_option("display.max_rows", 10)
 
 
 def cloud_cover_converter(val):
@@ -55,23 +64,17 @@ def load_data(file_name, start_date, end_date, verbose=False):
 
     data_df = data_df[start_date:end_date]
 
-    for i in range(6):
-        column_name = 'cloudcover_%i' % i
-        data_df[column_name] = (data_df["cloudcover_eddh"] == i)
+    cloud_cover_df = pandas.get_dummies(data_df.cloudcover_eddh, prefix="cloudcover_eddh")
 
-    df_month = pandas.get_dummies(data_df.index.month, prefix="month_")
-    #data_df["month"] = data_df.index.month
-
-    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour_")
-    #data_df["hour"] = data_df.index.hour
+    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
 
     data_df.reset_index(inplace=True)
 
     data_df = pandas.concat([
-        data_df, 
-        #df_month, 
-        df_hour], 
-    axis=1)
+        data_df,
+        df_hour,
+        cloud_cover_df
+    ], axis=1)
 
     # this is now binary encoded, so no need for it anymore
     del data_df["cloudcover_eddh"]
@@ -96,6 +99,7 @@ def load_data(file_name, start_date, end_date, verbose=False):
                 and attribute not in ("lat", "lon") 
                 and not attribute.startswith("hour_")
                 and not attribute.startswith("month_")
+                and not "cloudcover" in attribute
         ):
             input_df.drop(attribute, 1, inplace=True)
 
@@ -199,4 +203,4 @@ def setup_logger(hidden_layer_sizes):
 
 
 if __name__ == "__main__":
-    run_experiment((5, 5), number_months=2)
+    run_experiment((3,), number_months=2)

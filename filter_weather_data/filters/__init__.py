@@ -41,6 +41,8 @@ class StationRepository:
         self.private_weather_stations_file_name = private_weather_stations_file_name
         self.summary_dir = summary_dir
         self.cached_os_list_dir = os.listdir(self.summary_dir)
+        logging.debug("pws file name: %s" % private_weather_stations_file_name)
+        logging.debug("summary dir: %s" % summary_dir)
 
     def get_all_stations(self, limit=0):
         """
