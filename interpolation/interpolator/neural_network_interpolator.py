@@ -62,13 +62,15 @@ def load_data(file_name, start_date, end_date, verbose=False):
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
-    data_df = data_df[start_date:end_date]
+    data_df = data_df.loc[start_date:end_date]
 
     cloud_cover_df = pandas.get_dummies(data_df.cloudcover_eddh, prefix="cloudcover_eddh")
 
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
 
-    data_df.reset_index(inplace=True)
+    data_df.reset_index(inplace=True, drop=True)
+    df_hour.reset_index(inplace=True, drop=True)
+    cloud_cover_df.reset_index(inplace=True, drop=True)
 
     data_df = pandas.concat([
         data_df,
@@ -76,8 +78,12 @@ def load_data(file_name, start_date, end_date, verbose=False):
         cloud_cover_df
     ], axis=1)
 
+    #print(data_df.head(5))
+    #data_df.drop("index", axis=1, inplace=True)
+    #print(data_df.head(5))
+
     # this is now binary encoded, so no need for it anymore
-    del data_df["cloudcover_eddh"]
+    data_df.drop("cloudcover_eddh", axis=1, inplace=True)
 
     # no data means no windgusts were measured, not the absence of measurement instruments
     data_df["windgust_eddh"].fillna(0, inplace=True)
@@ -118,7 +124,7 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("training_data.csv", start_date, end_date, verbose=verbose)
     mlp_regressor.fit(input_data, target)
     predicted_values = mlp_regressor.predict(input_data)
-    score = numpy.sqrt(mean_absolute_error(target, predicted_values))
+    score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Training RMSE: %.3f" % score)
 
 
@@ -160,8 +166,9 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
         epsilon=1e-08  # solver=adam
     )
 
-    setup_logger(hidden_layer_sizes)
+    setup_logger(hidden_layer_sizes, learning_rate)
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
+    logging.info("learning_rate=%f" % learning_rate)
     for month in range(1, number_months):
         month_learned = "2016-%02i" % month
         logging.info("learn month %s" % month_learned)
@@ -172,7 +179,7 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
     logging.info(mlp_regressor.get_params())
 
 
-def setup_logger(hidden_layer_sizes):
+def setup_logger(hidden_layer_sizes, learning_rate):
     log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
@@ -182,9 +189,10 @@ def setup_logger(hidden_layer_sizes):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_neural_network_{hidden_layer_sizes}.log".format(
+    file_name = "interpolation_{date}_neural_network_{hidden_layer_sizes}_lr{lr}.log".format(
         hidden_layer_sizes="-".join([str(obj) for obj in hidden_layer_sizes]),
-        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
+        lr=learning_rate
     )
     path_to_file_to_log_to = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

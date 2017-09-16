@@ -96,7 +96,10 @@ def load_data(file_name, start_date, end_date, verbose=False):
         cloud_cover_df,
     ], axis=1)
 
-    logging.debug("concatenated: %s" % data_df.describe())
+    data_df.drop("index", axis=1, inplace=True)
+
+    if verbose:
+        logging.debug("concatenated: %s" % data_df.describe())
 
     data_df.windgust_eddh.fillna(0, inplace=True)
 
@@ -192,10 +195,10 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
         epsilon=1e-08  # solver=adam
     )
 
-    setup_logger(hidden_layer_sizes)
+    setup_logger(hidden_layer_sizes, learning_rate)
     logging.info("hidden_layer_sizes=%s" % str(hidden_layer_sizes))
     logging.info("number_months=%i" % number_months)
-    logging.info("learning_rate=%i" % learning_rate)
+    logging.info("learning_rate=%f" % learning_rate)
     for month in range(1, number_months):
         month_learned = "2016-%02i" % month
         logging.info("learn month %s" % month_learned)
@@ -206,7 +209,7 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
     logging.info(mlp_regressor.get_params())
 
 
-def setup_logger(hidden_layer_sizes):
+def setup_logger(hidden_layer_sizes, learning_rate):
     log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
@@ -216,9 +219,10 @@ def setup_logger(hidden_layer_sizes):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_neural_network_husconet_{hidden_layer_sizes}.log".format(
+    file_name = "interpolation_{date}_neural_network_husconet_{hidden_layer_sizes}_lr{lr}.log".format(
         hidden_layer_sizes="-".join([str(obj) for obj in hidden_layer_sizes]),
-        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
+        date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
+        lr=learning_rate
     )
     path_to_file_to_log_to = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

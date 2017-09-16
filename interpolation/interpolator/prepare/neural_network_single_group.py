@@ -90,7 +90,8 @@ def run():
     end_date = "2016-12-31T23:59"
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
-        RepositoryParameter.START_FULL_SENSOR
+        #RepositoryParameter.START_FULL_SENSOR
+        RepositoryParameter.START
     ))
     station_dicts = station_repository.load_all_stations(
         start_date,
