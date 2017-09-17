@@ -14,7 +14,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error
 
 from filter_weather_data import PROCESSED_DATA_DIR
-
+from interpolation.interpolator.logger import StreamToLogger
 
 if platform.uname()[1].startswith("ccblade"):  # the output files can turn several gigabyte so better not store them
                                                # on a network drive
@@ -76,19 +76,22 @@ def load_data(file_name, start_date, end_date, verbose=False):
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
-    data_df = data_df.loc[start_date:end_date]
     #logging.debug("data df: %s" % data_df.describe())
 
     cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh")
     data_df.drop("cloudcover_eddh", axis=1, inplace=True)
     #logging.debug("cloud cover: %s" % cloud_cover_df.describe())
 
+    data_df = data_df.loc[start_date:end_date]
+
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
     #logging.debug("hours: %s" % df_hour.describe())
 
     data_df.reset_index(inplace=True, drop=True)
+
     cloud_cover_df.reset_index(inplace=True, drop=True)
     df_hour.reset_index(inplace=True)
+
 
     data_df = pandas.concat([
         data_df,
@@ -104,16 +107,13 @@ def load_data(file_name, start_date, end_date, verbose=False):
     data_df.windgust_eddh.fillna(0, inplace=True)
 
     # drop columns with only NaN values, e.g. precipitation at airport is currently not reported at all
-
-    column_is_all_null = data_df.isnull().all(axis=0)
-    logging.debug("dropping columns %s" % str(data_df.columns[column_is_all_null]))
-    logging.debug("dropping example %s" % str(data_df.head(5)))
-    data_df.dropna(axis='columns', how="all", inplace=True)
+    data_df.drop("precipitation_eddh", axis=1, inplace=True)
 
     # neural networks can not deal with NaN values
     row_contains_any_null_df = data_df.loc[data_df.isnull().any(axis=1)]
-    logging.debug("dropping rows %s" % str(row_contains_any_null_df))
-    logging.debug("lost data in percent: %f" % (len(row_contains_any_null_df) / len(data_df) * 100))
+    if verbose:
+        logging.debug("dropping rows %s" % str(row_contains_any_null_df))
+        logging.debug("lost data in percent: %f" % (len(row_contains_any_null_df) / len(data_df) * 100))
     data_df.dropna(axis='index', how="any", inplace=True)
 
     if verbose:
@@ -148,6 +148,10 @@ def load_data(file_name, start_date, end_date, verbose=False):
 
 def train(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("training_data_husconet.csv", start_date, end_date, verbose=verbose)
+    if len(input_data) == 0 or len(target) == 0: 
+        logging.warning("training failed because of lack of data")
+        load_data("training_data_husconet.csv", start_date, end_date, verbose=True)
+        return
     if verbose:
         logging.debug("input_data[0]: %s" % str(input_data[0]))
         logging.debug("target[0]: %s" % str(target[0]))
@@ -159,6 +163,10 @@ def train(mlp_regressor, start_date, end_date, verbose=False):
 
 def evaluate(mlp_regressor, start_date, end_date, verbose=False):
     input_data, target = load_data("evaluation_data_husconet.csv", start_date, end_date, verbose=verbose)
+    if len(input_data) == 0 or len(target) == 0: 
+        logging.warning("training failed because of lack of data") 
+        load_data("evaluation_data_husconet.csv", start_date, end_date, verbose=True)
+        return
     predicted_values = mlp_regressor.predict(input_data)
     score = numpy.sqrt(mean_squared_error(target, predicted_values))
     logging.info("Evaluation RMSE: %.3f" % score)
@@ -207,6 +215,11 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
         logging.info("validate with month %s" % month_not_yet_learned)
         evaluate(mlp_regressor, month_not_yet_learned, month_not_yet_learned)
     logging.info(mlp_regressor.get_params())
+    logger = logging.getLogger()
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        handler.close()
+        logger.removeHandler(handler)
 
 
 def setup_logger(hidden_layer_sizes, learning_rate):
@@ -235,6 +248,8 @@ def setup_logger(hidden_layer_sizes, learning_rate):
     log.addHandler(file_handler)
 
     log.propagate = False
+
+    sys.stderr = StreamToLogger(log, logging.ERROR)
 
     log.info("### Start new logging")
     return log
