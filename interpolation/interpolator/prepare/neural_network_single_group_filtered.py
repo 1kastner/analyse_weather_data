@@ -35,7 +35,7 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
     :return:
     """
 
-    common_df = eddh_df
+    joined_stations = []
     while len(station_dicts):
         station_dict = station_dicts.pop()
         logging.debug("work on %s" % station_dict["name"])
@@ -46,7 +46,8 @@ def join_to_big_vector(output_csv_file, station_dicts, eddh_df):
         position = station_dict["meta_data"]["position"]
         station_df['lat'] = position["lat"]
         station_df['lon'] = position["lon"]
-        common_df = pandas.concat([common_df, station_df])
+        joined_stations.append(station_df.join(eddh_df, how="left"))
+    common_df = pandas.concat(joined_stations)
     common_df.sort_index(inplace=True)
     common_df = fill_missing_eddh_values(common_df)
     common_df.to_csv(output_csv_file)

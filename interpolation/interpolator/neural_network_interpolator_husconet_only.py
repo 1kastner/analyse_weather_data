@@ -65,25 +65,27 @@ def load_data(file_name, start_date, end_date, verbose=False):
     #logging.debug("data df: %s" % data_df.describe())
 
     cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh")
+    cloud_cover_df.set_index(data_df.index, inplace=True)
     data_df.drop("cloudcover_eddh", axis=1, inplace=True)
+
     #logging.debug("cloud cover: %s" % cloud_cover_df.describe())
+
+    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
+    df_hour.set_index(data_df.index, inplace=True)
+    #logging.debug("hours: %s" % df_hour.describe())
+
+    #data_df = pandas.concat([
+    #    data_df,
+    #    df_hour,
+    #    cloud_cover_df,
+    #], axis=1)
+
+    data_df = data_df.assign(**{column: df_hour[column] for column in df_hour.columns})
+    data_df = data_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.columns})
 
     data_df = data_df.loc[start_date:end_date]
 
-    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-    #logging.debug("hours: %s" % df_hour.describe())
-
     data_df.reset_index(inplace=True, drop=True)
-    cloud_cover_df.reset_index(inplace=True, drop=True)
-    df_hour.reset_index(inplace=True)
-
-    data_df = pandas.concat([
-        data_df,
-        df_hour,
-        cloud_cover_df,
-    ], axis=1)
-
-    data_df.drop("index", axis=1, inplace=True)
 
     if verbose:
         logging.debug("concatenated: %s" % data_df.describe())
@@ -99,7 +101,10 @@ def load_data(file_name, start_date, end_date, verbose=False):
     old_len = len(data_df)
     # neural networks can not deal with NaN values
     data_df.dropna(axis='index', how="any", inplace=True)
-    logging.debug("lost data in percent: %i" % (len(data_df) / old_len * 100))
+    new_len = len(data_df)
+
+    logging.debug("before: %i, after: %i" % (old_len, new_len))
+    logging.debug("percentage: %i" % ((old_len / new_len) * 100))
 
     # try to predict temperature of husconet stations
     target_df = pandas.DataFrame(data_df.temperature_husconet)

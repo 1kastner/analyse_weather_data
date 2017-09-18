@@ -63,27 +63,30 @@ def load_data(file_name, start_date, end_date, verbose=False):
     )
 
     cloud_cover_df = pandas.get_dummies(data_df.cloudcover_eddh, prefix="cloudcover_eddh")
+    data_df.drop("cloudcover_eddh", axis=1, inplace=True)
+    cloud_cover_df.set_index(data_df.index, inplace=True)
+
+    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
+    df_hour.set_index(data_df.index, inplace=True)
+
+    #data_df.reset_index(inplace=True, drop=True)
+    #df_hour.reset_index(inplace=True, drop=True)
+    #cloud_cover_df.reset_index(inplace=True, drop=True)
+
+    #data_df = pandas.concat([
+    #    data_df,
+    #    df_hour,
+    #    cloud_cover_df
+    #], axis=1)
+
+    data_df = data_df.assign(**{column: df_hour[column] for column in df_hour.columns})
+    data_df = data_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.columns})
 
     data_df = data_df.loc[start_date:end_date]
 
-    df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-
     data_df.reset_index(inplace=True, drop=True)
-    df_hour.reset_index(inplace=True, drop=True)
-    cloud_cover_df.reset_index(inplace=True, drop=True)
-
-    data_df = pandas.concat([
-        data_df,
-        df_hour,
-        cloud_cover_df
-    ], axis=1)
-
-    #print(data_df.head(5))
-    #data_df.drop("index", axis=1, inplace=True)
-    #print(data_df.head(5))
 
     # this is now binary encoded, so no need for it anymore
-    data_df.drop("cloudcover_eddh", axis=1, inplace=True)
 
     # no data means no windgusts were measured, not the absence of measurement instruments
     data_df["windgust_eddh"].fillna(0, inplace=True)
@@ -94,7 +97,9 @@ def load_data(file_name, start_date, end_date, verbose=False):
     old_len = len(data_df)
     # neural networks can not deal with NaN values 
     data_df.dropna(axis='index', how="any", inplace=True) 
-    logging.debug("lost data in percent: %i" % (len(data_df) / old_len * 100))
+    new_len = len(data_df)
+    logging.debug("old: %i, new: %i" % (old_len, new_len))
+    logging.debug("percentage: %i" % ((old_len / new_len) * 100))
 
     # try to predict temperature
     target_df = pandas.DataFrame(data_df.temperature)
