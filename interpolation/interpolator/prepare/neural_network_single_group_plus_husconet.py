@@ -47,7 +47,11 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     cloud_cover_df = pandas.get_dummies(eddh_df['cloudcover_eddh'], prefix="cloudcover_eddh")
     eddh_df.drop("cloudcover_eddh", axis=1, inplace=True)
     eddh_df = pandas.concat([
+<<<<<<< HEAD
         eddh_df,
+=======
+        data_df,
+>>>>>>> 34adea1e85cc704dad1483c1100042d2587621aa
         cloud_cover_df,
     ], axis=1)
 
