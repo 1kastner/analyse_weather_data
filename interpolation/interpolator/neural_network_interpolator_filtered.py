@@ -66,26 +66,11 @@ def load_data(file_name, start_date, end_date, verbose=False):
         converters={"cloudcover_eddh": cloud_cover_converter}
     )
 
-    #logging.debug("data df: %s" % data_df.describe())
-
     cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh_dummy")
-    cloud_cover_df.set_index(data_df.index, inplace=True)
     data_df.drop("cloudcover_eddh", axis=1, inplace=True)
-    #logging.debug("cloud cover: %s" % cloud_cover_df.describe())
 
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-    df_hour.set_index(data_df.index, inplace=True)
-    #logging.debug("hours: %s" % df_hour.describe())
 
-    #data_df.reset_index(inplace=True, drop=True)
-    #cloud_cover_df.reset_index(inplace=True, drop=True)
-    #df_hour.reset_index(inplace=True, drop=True)
-
-    #data_df = pandas.concat([
-    #    data_df,
-    #    df_hour,
-    #    cloud_cover_df,
-    #], axis=1)
     data_df = data_df.assign(**{column: df_hour[column] for column in df_hour.columns})
     data_df = data_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.columns})
 
@@ -104,8 +89,8 @@ def load_data(file_name, start_date, end_date, verbose=False):
     if verbose:
         logging.debug("nans: %s" % data_df[pandas.isnull(data_df).any(axis=1)])
 
-    old_len = len(data_df)
     # neural networks can not deal with NaN values
+    old_len = len(data_df)
     data_df.dropna(axis='index', how="any", inplace=True)
     new_len = len(data_df)
 
@@ -174,7 +159,7 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
     """
     mlp_regressor = MLPRegressor(
         hidden_layer_sizes=hidden_layer_sizes,
-        activation='relu',  # most likely linear effects
+        activation='tanh', #''relu',  # most likely linear effects
         solver='adam',  # good choice for large data sets
         alpha=0.0001,  # L2 penalty (regularization term) parameter.
         batch_size='auto',
@@ -185,7 +170,6 @@ def run_experiment(hidden_layer_sizes, number_months=12, learning_rate=.001):
 
         random_state=None,
         tol=0.0001,
-        #verbose=True,
         verbose=False,
         warm_start=False,  # erase previous solution
 
@@ -249,4 +233,4 @@ def setup_logger(hidden_layer_sizes, learning_rate):
 
 
 if __name__ == "__main__":
-    run_experiment((3,), number_months=2)
+    run_experiment((5,), number_months=12)

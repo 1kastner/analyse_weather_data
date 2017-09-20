@@ -1,7 +1,7 @@
 """
 
 Run with 
--m filter_weather_data.start_filtering_pipe_full
+-m filter_weather_data.filtering_pipe_full
 if you want to see the demo.
 """
 
@@ -117,7 +117,8 @@ class FilterApplier:
             save_station_dicts_as_time_span_summary(station_dicts, output_dir_for_summaries)
         return station_dicts
 
-    def apply_invalid_position_filter(self, station_dicts, meta_info_df):
+    @staticmethod
+    def apply_invalid_position_filter(station_dicts, meta_info_df):
         """
         Filters out stations which have invalid positions
         
@@ -126,34 +127,17 @@ class FilterApplier:
         :return: Good stations
         """
         with_valid_position_station_dicts = filter_wrongly_positioned_stations(station_dicts, meta_info_df)
-        #csv_path_with_valid_position = os.path.join(
-        #    self.output_dir,
-        #    "station_dicts_with_valid_position_full.csv"
-        #)
-        #if not os.path.isfile(csv_path_with_valid_position) or self.force_overwrite:
-        #    save_station_dicts_as_metadata_csv(with_valid_position_station_dicts, csv_path_with_valid_position)
         return with_valid_position_station_dicts
 
-    def apply_infrequent_record_filter(self, station_dicts):
+    @staticmethod
+    def apply_infrequent_record_filter(station_dicts):
         """
         Filters out stations which have infrequent records, less than 80% per day or 80% per month
 
         :param station_dicts: The station dicts
         :return: Good stations
         """
-        #csv_path_frequent = os.path.join(
-        #    self.output_dir,
-        #    "station_dicts_frequent_full.csv"
-        #)
         frequent_station_dicts = filter_infrequently_reporting_stations(station_dicts)
-        #if not os.path.isfile(csv_path_frequent) or self.force_overwrite:
-        #    save_station_dicts_as_metadata_csv(frequent_station_dicts, csv_path_frequent)
-        #if self.force_overwrite:
-        #    output_dir_for_summaries = os.path.join(
-        #        PROCESSED_DATA_DIR,
-        #        "filtered_station_summaries_frequent_full"
-        #    )
-        #    save_station_dicts_as_time_span_summary(frequent_station_dicts, output_dir_for_summaries)
         return frequent_station_dicts
 
     def apply_not_indoor_filter(self, station_dicts):
@@ -163,13 +147,7 @@ class FilterApplier:
         :param station_dicts: The station dicts
         :return: Good stations
         """
-        #csv_path_not_indoor = os.path.join(
-        #    self.output_dir,
-        #    "station_dicts_outdoor_full.csv"
-        #)
         outdoor_station_dicts = filter_indoor_stations(station_dicts, self.start_date, self.end_date)
-        #if not os.path.isfile(csv_path_not_indoor) or self.force_overwrite:
-        #    save_station_dicts_as_metadata_csv(outdoor_station_dicts, csv_path_not_indoor)
         return outdoor_station_dicts
 
     def apply_unshaded_filter(self, station_dicts):
@@ -204,7 +182,7 @@ def save_filtered_out_stations(name, stations):
         os.mkdir(output)
     csv_file = os.path.join(
         output,
-        name + "_full.csv"
+        name + ".csv"
     )
     with open(csv_file, "w") as f:
         f.write("\n".join([station for station in stations]))

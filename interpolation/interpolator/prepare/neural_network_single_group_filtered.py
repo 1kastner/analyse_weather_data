@@ -59,7 +59,6 @@ def run():
 
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
-        #RepositoryParameter.ONLY_OUTDOOR_AND_SHADED_FULL_SENSOR
         RepositoryParameter.ONLY_OUTDOOR_AND_SHADED
     ))
     station_dicts = station_repository.load_all_stations(

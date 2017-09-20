@@ -44,11 +44,10 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     """
 
     logging.debug("eddh df info: %s" % get_info(eddh_df))
-    cloud_cover_df = pandas.get_dummies(data_df['cloudcover_eddh'], prefix="cloudcover_eddh")
+    cloud_cover_df = pandas.get_dummies(eddh_df['cloudcover_eddh'], prefix="cloudcover_eddh")
     eddh_df.drop("cloudcover_eddh", axis=1, inplace=True)
     eddh_df = pandas.concat([
-        data_df,
-        df_hour,
+        eddh_df,
         cloud_cover_df,
     ], axis=1)
 
