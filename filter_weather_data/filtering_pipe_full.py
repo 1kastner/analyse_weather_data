@@ -63,7 +63,7 @@ def save_station_dicts_as_time_span_summary(station_dicts, output_dir=None):
     for station_dict in station_dicts:
         station_name = station_dict["name"]
         df = station_dict["data_frame"]
-        csv_file = os.path.join(output_dir, station_name + "_full.csv")
+        csv_file = os.path.join(output_dir, station_name + ".csv")
         logging.debug("save " + csv_file)
         df.to_csv(csv_file)
 

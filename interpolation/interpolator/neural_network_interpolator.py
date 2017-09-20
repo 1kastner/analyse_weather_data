@@ -69,16 +69,6 @@ def load_data(file_name, start_date, end_date, verbose=False):
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
     df_hour.set_index(data_df.index, inplace=True)
 
-    #data_df.reset_index(inplace=True, drop=True)
-    #df_hour.reset_index(inplace=True, drop=True)
-    #cloud_cover_df.reset_index(inplace=True, drop=True)
-
-    #data_df = pandas.concat([
-    #    data_df,
-    #    df_hour,
-    #    cloud_cover_df
-    #], axis=1)
-
     data_df = data_df.assign(**{column: df_hour[column] for column in df_hour.columns})
     data_df = data_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.columns})
 

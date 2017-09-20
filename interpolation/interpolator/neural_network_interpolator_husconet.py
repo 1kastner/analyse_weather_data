@@ -25,23 +25,6 @@ pandas.set_option("display.max_columns", 500)
 pandas.set_option("display.max_rows", 10)
 
 
-def cloud_cover_converter(val):
-    if val in ["SKC", "CLR", "NSC", "CAVOC"]:  # 0 octas
-        return 0
-    elif val == "FEW":  # 1-2 octas
-        return 1
-    elif val == "SCT":  # 3-4 octas
-        return 2
-    elif val == "BKN":  # 5-7 octas
-        return 3
-    elif val == "OVC":  # 8 octas
-        return 4
-    elif val == "VV":  # clouds can not be seen because of rain or fog
-        return 5
-    else:
-        raise RuntimeError(val + "not found")
-
-
 def load_data(file_name, start_date, end_date, verbose=False):
     """
 
@@ -73,27 +56,19 @@ def load_data(file_name, start_date, end_date, verbose=False):
     data_df = pandas.read_csv(
         csv_file,
         index_col="datetime",
-        parse_dates=["datetime"],
-        converters={"cloudcover_eddh": cloud_cover_converter}
+        parse_dates=["datetime"]
     )
 
     df_hour = pandas.get_dummies(data_df.index.hour, prefix="hour")
-    df_hour.set_index(data_df.index, inplace=True)
 
-    #data_df = pandas.concat([
-    #    data_df,
-    #    df_hour,
-    #], axis=1)
-
-    data_df = data_df.assign(**{column: df_hour[column] for column in df_hour.columns})
-    #data_df = data_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.column})
-
+    df_hour_dict_version = {column: df_hour[column] for column in df_hour.columns}
+    for series in df_hour_dict_version.values():
+        series.reset_index(inplace=True, drop=True)
     data_df.reset_index(inplace=True, drop=True)
+    data_df = data_df.assign(**df_hour_dict_version)
 
     if verbose:
         logging.debug("concatenated: %s" % data_df.describe())
-
-    data_df.windgust_eddh.fillna(0, inplace=True)
 
     # drop columns with only NaN values, e.g. precipitation at airport is currently not reported at all
     data_df.drop("precipitation_eddh", axis=1, inplace=True)

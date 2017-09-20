@@ -46,6 +46,7 @@ def fill_missing_eddh_values(common_df):
     :param common_df: airport and private data merged
     :return: continued airport data
     """
+    logging.debug("columns checked during fillna-padding: %s" % str(common_df.columns))
     common_df.humidity_eddh.fillna(method='pad', inplace=True)
     common_df.cloudcover_eddh.fillna(method='pad', inplace=True)
     common_df.dewpoint_eddh.fillna(method='pad', inplace=True)

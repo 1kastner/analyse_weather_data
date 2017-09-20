@@ -44,16 +44,6 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
     """
 
     logging.debug("eddh df info: %s" % get_info(eddh_df))
-    cloud_cover_df = pandas.get_dummies(eddh_df['cloudcover_eddh'], prefix="cloudcover_eddh")
-    eddh_df.drop("cloudcover_eddh", axis=1, inplace=True)
-    eddh_df = pandas.concat([
-<<<<<<< HEAD
-        eddh_df,
-=======
-        data_df,
->>>>>>> 34adea1e85cc704dad1483c1100042d2587621aa
-        cloud_cover_df,
-    ], axis=1)
 
     station_dfs = []
     while len(station_dicts):
@@ -70,15 +60,10 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
 
     big_station_df = pandas.concat(station_dfs)
     big_station_df.columns = big_station_df.columns.map(lambda x: str(x) + "_pws")
-    logging.debug("provided by PWS: %s" % str(big_station_df.head(1)))
+    logging.debug("provided by PWS: %s" % str(big_station_df.head(5)))
     big_station_df.sort_index(inplace=True)
     logging.debug("rows of pws data: %i" % len(big_station_df))
     logging.debug("pws df info: %s" % get_info(big_station_df))
-
-    common_df = big_station_df.join(eddh_df, how="left")  # eddh will be temporally interpolated later
-    logging.debug("common_df with airport and pws: %s" % str(common_df.head(1)))
-    logging.debug("rows of pws + airport data: %i" % len(common_df))
-    logging.debug("airport + pws df info: %s" % get_info(common_df))
 
     husconet_dfs = []
     while len(husconet_dicts):
@@ -94,19 +79,21 @@ def join_to_big_vector(output_csv_file, station_dicts, husconet_dicts, eddh_df):
 
     big_husconet_df = pandas.concat(husconet_dfs)
     big_husconet_df.columns = big_husconet_df.columns.map(lambda x: str(x) + "_husconet")
-    logging.debug("provided by HUSCONET: %s" % str(big_husconet_df.head(1)))
+    logging.debug("provided by HUSCONET: %s" % str(big_husconet_df.head(5)))
     big_husconet_df.sort_index(inplace=True)
     logging.debug("rows of husconet: %i" % len(big_husconet_df))
     logging.debug("husconet df info: %s" % get_info(big_husconet_df))
 
-    common_df = big_husconet_df.join(common_df, how="inner")  # no temporal interpolation, so inner needed
+    common_df = big_husconet_df.join(big_station_df, how="inner")  # no temporal interpolation, so inner needed
     logging.debug("rows of all: %i" % len(common_df))
     logging.debug("airport + pws + husconet df info: %s" % get_info(common_df))
     logging.debug("airport + pws + husconet df info: %s" % str(common_df.head(1)))
 
-    common_df.sort_index(inplace=True)
-
+    common_df = common_df.join(eddh_df, how='outer')
     common_df = fill_missing_eddh_values(common_df)
+    cloud_cover_df = pandas.get_dummies(common_df['cloudcover_eddh'], prefix="cloudcover_eddh")
+    common_df.drop("cloudcover_eddh", axis=1, inplace=True)
+    common_df = common_df.assign(**{column: cloud_cover_df[column] for column in cloud_cover_df.columns})
 
     logging.debug("shortly before saving df info: %s" % get_info(common_df))
 
@@ -129,13 +116,12 @@ def run(testing=False):
     eddh_df = load_eddh(start_date, end_date)
     station_repository = StationRepository(*get_repository_parameters(
         RepositoryParameter.START_FULL_SENSOR
-        #RepositoryParameter.START
     ))
     station_dicts = station_repository.load_all_stations(
         start_date,
         end_date,
         limit_to_temperature=False,
-        limit=0 if not testing else 5  # for testing purposes
+        limit=0 if not testing else 15  # for testing purposes
     )
 
     husconet_dicts = HusconetStationRepository().load_all_stations(
@@ -170,6 +156,8 @@ def run(testing=False):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     production_environment = platform.uname()[1].startswith("ccblade")
+    testing = (not production_environment)
+    logging.debug("testing: %s" % testing)
     run(
         testing=(not production_environment)
     )
