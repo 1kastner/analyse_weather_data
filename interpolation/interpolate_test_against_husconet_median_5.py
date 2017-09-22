@@ -73,10 +73,11 @@ def do_interpolation_scoring(
     grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
     each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
 
+    hour_len = len(each_hour)
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
         if current_i % 200 == 0:
-            logger.debug("done: %i percent" % (100 * current_i / total_len))
+            logger.debug("done: %.3f percent" % (100 * current_i / hour_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
                 sum_square_errors[method] = {}
