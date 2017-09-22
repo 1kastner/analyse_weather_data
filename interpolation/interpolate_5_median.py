@@ -120,7 +120,7 @@ def do_interpolation_scoring(
 
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
-        if current_i % 10000 == 0:
+        if current_i % 200 == 0:
             logger.debug("done: %.3f percent" % (100 * current_i / total_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:

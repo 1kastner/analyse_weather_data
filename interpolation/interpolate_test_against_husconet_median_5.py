@@ -72,9 +72,10 @@ def do_interpolation_scoring(
     each_minute = target_station_dict["data_frame"].index.values
     grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
     each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
-        if current_i % 10000 == 0:
+        if current_i % 200 == 0:
             logger.debug("done: %i percent" % (100 * current_i / total_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
@@ -114,7 +115,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
     )
 
     random.shuffle(station_dicts)
-    neighbour_station_dicts = station_dicts[:int(.7 * len(station_dicts))] # only use 70%
+    neighbour_station_dicts = station_dicts[:int(.7 * len(station_dicts))]  # only use 70%
 
     target_station_dicts = HusconetStationRepository().load_all_stations(
         start_date,

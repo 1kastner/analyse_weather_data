@@ -93,16 +93,16 @@ class NearestKFinder(AbstractNeighbourFinder):
                         break
             return neighbours
 
-    def find_k_nearest_neighbour_dicts(self, station_dict, date, k):
+    def find_k_nearest_neighbour_dicts(self, target_dict, date, k):
         """
 
-        :param station_dict: The station to look for
+        :param target_dict: The station to look for
         :param date: The time point (pandas compatible)
         :param k: The number of neighbours, all neighbours for k=-1
         :return: List of closest temperatures and distances
         """
-        if self.last_target != station_dict:
-            self._sort_for_target(station_dict)
+        if self.last_target != target_dict:
+            self._sort_for_target(target_dict)
 
         neighbours = []
         found = 0
