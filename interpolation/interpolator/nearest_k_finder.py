@@ -16,6 +16,7 @@ class NearestKFinder(AbstractNeighbourFinder):
     def __init__(self, station_dicts, start_date, end_date):
         self._sorted_station_dicts = station_dicts[:]
         self.last_target = None
+        self.cached_temporary = {}
 
         # logging.debug("start resampling for k nearest")
         self.station_dict_at_position = {}
@@ -63,26 +64,30 @@ class NearestKFinder(AbstractNeighbourFinder):
                         break
             return neighbours
         else:
-            sorted_station_dicts = self._sorted_station_dicts.copy()
-            position = target_dict["meta_data"]["position"]
-            search_lat = position["lat"]
-            search_lon = position["lon"]
-            search = geopy.Point(search_lat, search_lon)
-            for station_dict in sorted_station_dicts:
-                position = station_dict["meta_data"]["position"]
-                point_lat = position["lat"]
-                point_lon = position["lon"]
-                point = geopy.Point(point_lat, point_lon)
-                distance = geopy.distance.distance(point, search).m
-                station_dict["_temporary_interpolation_distance"] = distance
-            sorted_station_dicts.sort(key=lambda station_dict: station_dict["_temporary_interpolation_distance"])
-            for station_dict in sorted_station_dicts:
+            temporary_key = "_temporary_interpolation_distance_" + target_dict["name"]
+            if temporary_key not in self.cached_temporary:
+                sorted_station_dicts = self._sorted_station_dicts.copy()
+                position = target_dict["meta_data"]["position"]
+                search_lat = position["lat"]
+                search_lon = position["lon"]
+                search = geopy.Point(search_lat, search_lon)
+                for station_dict in sorted_station_dicts:
+                    if temporary_key not in station_dict:
+                        position = station_dict["meta_data"]["position"]
+                        point_lat = position["lat"]
+                        point_lon = position["lon"]
+                        point = geopy.Point(point_lat, point_lon)
+                        distance = geopy.distance.distance(point, search).m
+                        station_dict[temporary_key] = distance
+                sorted_station_dicts.sort(key=lambda station_dict: station_dict[temporary_key])
+                self.cached_temporary[temporary_key] = sorted_station_dicts
+            for station_dict in self.cached_temporary[temporary_key]:
                 temperature_at_time_t = station_dict["data_frame"].loc[date].temperature
                 if numpy.isnan(temperature_at_time_t):  # station not available
                     continue
                 else:
                     found += 1
-                    distance = station_dict["_temporary_interpolation_distance"]
+                    distance = station_dict[temporary_key]
                     neighbours.append((temperature_at_time_t, distance))
                     if k != -1 and found == k:
                         break
@@ -131,6 +136,7 @@ def demo():
     for neighbour in neighbours:
         temperature, distance = neighbour
         print("measured", temperature, "°C in", distance, "meters distance")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

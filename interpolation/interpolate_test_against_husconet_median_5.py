@@ -74,6 +74,8 @@ def do_interpolation_scoring(
     each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
+        if current_i % 10000 == 0:
+            logger.debug("done: %i percent" % (100 * current_i / total_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
                 sum_square_errors[method] = {}
@@ -104,12 +106,21 @@ def do_interpolation_scoring(
 
 def score_algorithm(start_date, end_date, repository_parameters, limit=0, interpolation_name="NONE"):
     station_repository = CrowdsoucingStationRepository(*repository_parameters)
-    station_dicts = station_repository.load_all_stations(start_date, end_date, limit=limit)
+
+    station_dicts = station_repository.load_all_stations(
+        start_date,
+        end_date,
+        limit=limit
+    )
 
     random.shuffle(station_dicts)
     neighbour_station_dicts = station_dicts[:int(.7 * len(station_dicts))] # only use 70%
 
-    target_station_dicts = HusconetStationRepository().load_all_stations(start_date, end_date, limit=limit)
+    target_station_dicts = HusconetStationRepository().load_all_stations(
+        start_date,
+        end_date,
+        limit=limit
+    )
 
     logger = get_logger(interpolation_name)
     logger.info("General Overview")
@@ -156,9 +167,9 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
 def demo():
     start_date = "2016-01-31"
-    end_date = "2016-02-01"
+    end_date = "2016-02-15"
     repository_parameters = get_repository_parameters(RepositoryParameter.START)
-    score_algorithm(start_date, end_date, repository_parameters, limit=10, interpolation_name="test")
+    score_algorithm(start_date, end_date, repository_parameters, limit=30, interpolation_name="test")
 
 
 if __name__ == "__main__":

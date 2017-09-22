@@ -61,8 +61,8 @@ class Scorer:
 def score_interpolation_algorithm_at_date(scorer, date):
     t_actual = scorer.target_station_dict["data_frame"].loc[date].temperature
     results = {}
-    #results.update(scorer.score_3_nearest_neighbours(date, t_actual))
-    #results.update(scorer.score_5_nearest_neighbours(date, t_actual))
+    results.update(scorer.score_3_nearest_neighbours(date, t_actual))
+    results.update(scorer.score_5_nearest_neighbours(date, t_actual))
     results.update(scorer.score_all_neighbours(date, t_actual))
     return results
 
@@ -117,8 +117,11 @@ def do_interpolation_scoring(
     each_minute = target_station_dict["data_frame"].index.values
     grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
     each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
+        if current_i % 10000 == 0:
+            logger.debug("done: %.3f percent" % (100 * current_i / total_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
                 sum_square_errors[method] = {}
@@ -127,6 +130,7 @@ def do_interpolation_scoring(
             if not numpy.isnan(square_error):
                 sum_square_errors[method]["total"] += square_error
                 sum_square_errors[method]["n"] += 1
+
     for method, result in sum_square_errors.items():
         if sum_square_errors[method]["n"] > 0:
             method_rmse = numpy.sqrt(sum_square_errors[method]["total"] / sum_square_errors[method]["n"])
@@ -200,7 +204,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
 def demo():
     start_date = "2016-01-31"
-    end_date = "2016-02-05"
+    end_date = "2016-02-15"
     repository_parameters = get_repository_parameters(RepositoryParameter.START)
     score_algorithm(start_date, end_date, repository_parameters, limit=50, interpolation_name="test")
 
