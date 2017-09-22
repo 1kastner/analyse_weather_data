@@ -32,7 +32,7 @@ def get_logger(interpolation_name):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_{date}_{interpolation_name}_husconet_median_5.log".format(
+    file_name = "interpolation_{date}_{interpolation_name}_husconet_median_sparse_5.log".format(
         interpolation_name=interpolation_name,
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )

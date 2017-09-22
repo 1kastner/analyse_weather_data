@@ -77,7 +77,7 @@ def get_logger(interpolation_name):
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
 
-    file_name = "interpolation_5_median_{date}_{interpolation_name}.log".format(
+    file_name = "interpolation_5_median_sparse_{date}_{interpolation_name}.log".format(
         interpolation_name=interpolation_name,
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-")
     )
