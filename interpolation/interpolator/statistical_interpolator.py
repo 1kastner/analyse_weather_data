@@ -15,8 +15,8 @@ def inverted_distance_weight(temperatures, distances, p):
     :param p: The power, normally 2 or 3
     :return: interpolated temperature
     """
-    inverted_sum_distances = sum([distance ** -p for distance in distances])
-    weights = [(distance ** -p) / inverted_sum_distances for distance in distances]
+    inverted_sum_distances = sum([distance ** -p for distance in distances if distance != 0])
+    weights = [(distance ** -p) / inverted_sum_distances for distance in distances if distance != 0]
     temperature_idw = sum([w * t_i for w, t_i in zip(weights, temperatures)])
     return temperature_idw
 
@@ -86,6 +86,7 @@ def demo():
     items.sort(key=lambda el: el[0])
     for method, value in items:
         print("method", method, "value", value**.5)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

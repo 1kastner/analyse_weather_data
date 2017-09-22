@@ -37,9 +37,60 @@ class NearestKFinder(AbstractNeighbourFinder):
             station_dict["_interpolation__distance"] = distance
         self._sorted_station_dicts.sort(key=lambda station_dict: station_dict["_interpolation__distance"])
 
-    def find_k_nearest_neighbours(self, station_dict, date, k):
+    def find_k_nearest_neighbours(self, target_dict, date, k, cache=True):
         """
         
+        :param target_dict: The station to look for
+        :param date: The time point (pandas compatible)
+        :param k: The number of neighbours, all neighbours for k=-1
+        :return: List of closest temperatures and distances
+        """
+        if self.last_target != target_dict:
+            self._sort_for_target(target_dict)
+
+        neighbours = []
+        found = 0
+        if cache:
+            for target_dict in self._sorted_station_dicts:
+                temperature_at_time_t = target_dict["data_frame"].loc[date].temperature
+                if numpy.isnan(temperature_at_time_t):  # station not available
+                    continue
+                else:
+                    found += 1
+                    distance = target_dict["_interpolation__distance"]
+                    neighbours.append((temperature_at_time_t, distance))
+                    if k != -1 and found == k:
+                        break
+            return neighbours
+        else:
+            sorted_station_dicts = self._sorted_station_dicts.copy()
+            position = target_dict["meta_data"]["position"]
+            search_lat = position["lat"]
+            search_lon = position["lon"]
+            search = geopy.Point(search_lat, search_lon)
+            for station_dict in sorted_station_dicts:
+                position = station_dict["meta_data"]["position"]
+                point_lat = position["lat"]
+                point_lon = position["lon"]
+                point = geopy.Point(point_lat, point_lon)
+                distance = geopy.distance.distance(point, search).m
+                station_dict["_temporary_interpolation_distance"] = distance
+            sorted_station_dicts.sort(key=lambda station_dict: station_dict["_temporary_interpolation_distance"])
+            for station_dict in sorted_station_dicts:
+                temperature_at_time_t = station_dict["data_frame"].loc[date].temperature
+                if numpy.isnan(temperature_at_time_t):  # station not available
+                    continue
+                else:
+                    found += 1
+                    distance = station_dict["_temporary_interpolation_distance"]
+                    neighbours.append((temperature_at_time_t, distance))
+                    if k != -1 and found == k:
+                        break
+            return neighbours
+
+    def find_k_nearest_neighbour_dicts(self, station_dict, date, k):
+        """
+
         :param station_dict: The station to look for
         :param date: The time point (pandas compatible)
         :param k: The number of neighbours, all neighbours for k=-1
@@ -56,8 +107,7 @@ class NearestKFinder(AbstractNeighbourFinder):
                 continue
             else:
                 found += 1
-                distance = station_dict["_interpolation__distance"]
-                neighbours.append((temperature_at_time_t, distance))
+                neighbours.append(station_dict)
                 if k != -1 and found == k:
                     break
         return neighbours
