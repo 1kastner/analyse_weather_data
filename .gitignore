@@ -111,3 +111,4 @@ interpolation/private_backup/
 interpolation/interpolation_result_*.csv
 descriptive_statistics/log/
 dwd_raw_data/
+interpolation/interpolation_*.csv
