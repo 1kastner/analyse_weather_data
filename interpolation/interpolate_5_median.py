@@ -142,12 +142,13 @@ def do_interpolation_scoring(
         logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
 
     logger.info("end method list")
-
+    logger.info("overall result")
     data_dict = {}
     for method in sum_square_errors.keys():
         data_dict[method + "--rmse"] = [sum_square_errors[method]["rmse"]]
         data_dict[method + "--n"] = [sum_square_errors[method]["n"]]
         data_dict[method + "--total"] = [sum_square_errors[method]["total"]]
+    logger.info("end overall result")
     return pandas.DataFrame(data=data_dict)
 
 

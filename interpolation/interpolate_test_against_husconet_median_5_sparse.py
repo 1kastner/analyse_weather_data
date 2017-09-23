@@ -147,7 +147,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
     logger.info("end targets")
 
-    logger.info("overall results")
+    logger.info("overall result")
     overall_result_df = pandas.concat(overall_result)
     column_names = overall_result_df.columns.values.tolist()
     methods = set()
@@ -160,6 +160,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
         overall_rmse = numpy.sqrt(overall_total / overall_n)
         score_str = "%.3f" % overall_rmse
         logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
+    logger.info("end overall result")
 
     overall_result_df.to_csv("interpolation_result_husconet_median_5_sparse_{date}_{interpolation_name}.csv".format(
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
