@@ -194,7 +194,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
         overall_total = numpy.nansum(overall_result_df[method + "--total"])
         overall_n = int(numpy.nansum(overall_result_df[method + "--n"]))
         overall_rmse = numpy.sqrt(overall_total / overall_n)
-        score_str = "%.5f" % overall_rmse
+        score_str = "%.3f" % overall_rmse
         logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
 
     overall_result_df.to_csv("interpolation_result_median_5_sparse_{date}_{interpolation_name}.csv".format(
