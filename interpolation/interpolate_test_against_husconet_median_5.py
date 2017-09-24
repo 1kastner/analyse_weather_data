@@ -28,9 +28,9 @@ def setup_logger(interpolation_name):
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    log.addHandler(console_handler)
+    #console_handler = logging.StreamHandler(sys.stdout)
+    #console_handler.setFormatter(formatter)
+    #log.addHandler(console_handler)
 
     file_name = "interpolation_{date}_{interpolation_name}_husconet_median_5.log".format(
         interpolation_name=interpolation_name,

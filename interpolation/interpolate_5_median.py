@@ -68,15 +68,15 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
-def get_logging(interpolation_name):
+def setup_logging(interpolation_name):
     log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    log.addHandler(console_handler)
+    #console_handler = logging.StreamHandler(sys.stdout)
+    #console_handler.setFormatter(formatter)
+    #log.addHandler(console_handler)
 
     file_name = "interpolation_median_5_{date}_{interpolation_name}.log".format(
         interpolation_name=interpolation_name,
@@ -162,7 +162,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
     separator = int(.3 * len(station_dicts))  # 70% vs 30%
     target_station_dicts, neighbour_station_dicts = station_dicts[:separator], station_dicts[separator:]
 
-    get_logging(interpolation_name)
+    setup_logging(interpolation_name)
     logging.info("General Overview")
     logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
     logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))

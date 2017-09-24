@@ -73,15 +73,15 @@ def score_interpolation_algorithm_at_date(scorer, date):
     return results
 
 
-def get_logging(interpolation_name):
+def setup_logging(interpolation_name):
     log = logging.getlogging('interpolate')
 
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    log.addHandler(console_handler)
+    #console_handler = logging.StreamHandler(sys.stdout)
+    #console_handler.setFormatter(formatter)
+    #log.addHandler(console_handler)
 
     file_name = "interpolation_{date}_{interpolation_name}_husconet.log".format(
         interpolation_name=interpolation_name,
@@ -162,7 +162,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
     target_station_dicts = HusconetStationRepository().load_all_stations(start_date, end_date, limit=limit)
 
-    get_logging(interpolation_name)
+    setup_logging(interpolation_name)
     logging.info("General Overview")
     logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
     logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
