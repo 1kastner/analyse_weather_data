@@ -29,6 +29,7 @@ class Scorer:
     def __init__(self, target_station_dict, neighbour_station_dicts, start_date, end_date):
         self.target_station_dict = target_station_dict
         self.nearest_k_finder = NearestKFinder(neighbour_station_dicts, start_date, end_date)
+        self.key = "interpolation_distance_" + self.target_station_dict["name"]
 
     def score_3_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.find_k_median_neighbours(date, 3)
@@ -53,7 +54,7 @@ class Scorer:
             )
             temperatures, distances = zip(*temperatures_and_distances)
             neighbour_dict["_median"] = statistics.median(temperatures)
-        relevant_neighbours = [(neighbour_dict["_median"], neighbour_dict["_interpolation__distance"])
+        relevant_neighbours = [(neighbour_dict["_median"], neighbour_dict[self.key])
                                for neighbour_dict in neighbour_dicts]
         return relevant_neighbours
 
@@ -68,7 +69,7 @@ def score_interpolation_algorithm_at_date(scorer, date):
 
 
 def get_logger(interpolation_name):
-    log = logging.getLogger('interpolate')
+    log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
