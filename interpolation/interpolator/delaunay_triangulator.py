@@ -142,6 +142,7 @@ def demo():
         temperature, distance = neighbour
         print("measured", temperature, "°C in", distance, "meters distance")
 
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     demo()

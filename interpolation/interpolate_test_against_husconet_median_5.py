@@ -18,12 +18,12 @@ from gather_weather_data.husconet import StationRepository as HusconetStationRep
 from filter_weather_data import get_repository_parameters
 from filter_weather_data import RepositoryParameter
 
-from .interpolate_5_median import Scorer
-from .interpolate_5_median import score_interpolation_algorithm_at_date
+from interpolation.interpolate_5_median import Scorer
+from interpolation.interpolate_5_median import score_interpolation_algorithm_at_date
 
 
-def get_logger(interpolation_name):
-    log = logging.getLogger('interpolate')
+def setup_logger(interpolation_name):
+    log = logging.getLogger('')
 
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -57,13 +57,13 @@ def do_interpolation_scoring(
         target_station_dicts_len,
         neighbour_station_dicts,
         start_date,
-        end_date,
-        logger
+        end_date
+
 ):
     target_station_name = target_station_dict["name"]
-    logger.info("interpolate for " + target_station_name)
-    logger.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
-    logger.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    logging.info("interpolate for " + target_station_name)
+    logging.info("currently at " + str(j + 1) + " out of " + target_station_dicts_len)
+    logging.info("use " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
 
     scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
     scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
@@ -77,7 +77,7 @@ def do_interpolation_scoring(
     for current_i, date in enumerate(each_hour):
         result = score_interpolation_algorithm_at_date(scorer, date)
         if current_i % 200 == 0:
-            logger.debug("done: %.3f percent" % (100 * current_i / hour_len))
+            logging.debug("done: %.3f percent" % (100 * current_i / hour_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
                 sum_square_errors[method] = {}
@@ -94,9 +94,9 @@ def do_interpolation_scoring(
             method_rmse = numpy.nan
         sum_square_errors[method]["rmse"] = method_rmse
         score_str = "%.3f" % method_rmse
-        logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
+        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(sum_square_errors[method]["n"]))
 
-    logger.info("end method list")
+    logging.info("end method list")
 
     data_dict = {}
     for method in sum_square_errors.keys():
@@ -124,13 +124,13 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
         limit=limit
     )
 
-    logger = get_logger(interpolation_name)
-    logger.info("General Overview")
-    logger.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
-    logger.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
-    logger.info("End overview")
+    setup_logger(interpolation_name)
+    logging.info("General Overview")
+    logging.info("targets: " + " ".join([station_dict["name"] for station_dict in target_station_dicts]))
+    logging.info("neighbours: " + " ".join([station_dict["name"] for station_dict in neighbour_station_dicts]))
+    logging.info("End overview")
 
-    logger.info("Several Runs")
+    logging.info("Several Runs")
     target_station_dicts_len = str(len(target_station_dicts))
 
     overall_result = itertools.starmap(do_interpolation_scoring, [
@@ -140,14 +140,13 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
             target_station_dicts_len,
             neighbour_station_dicts,
             start_date,
-            end_date,
-            logger
+            end_date
         ] for j, target_station_dict in enumerate(target_station_dicts)
     ])
 
-    logger.info("end targets")
+    logging.info("end targets")
 
-    logger.info("overall result")
+    logging.info("overall result")
     overall_result_df = pandas.concat(overall_result)
     column_names = overall_result_df.columns.values.tolist()
     methods = set()
@@ -159,9 +158,9 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
         overall_n = int(numpy.nansum(overall_result_df[method + "--n"]))
         overall_rmse = numpy.sqrt(overall_total / overall_n)
         score_str = "%.3f" % overall_rmse
-        logger.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
+        logging.info(method + " " * (12 - len(method)) + score_str + " n=" + str(overall_n))
 
-    logger.info("end overall result")
+    logging.info("end overall result")
 
     overall_result_df.to_csv("interpolation_result_husconet_median_5_{date}_{interpolation_name}.csv".format(
         date=datetime.datetime.now().isoformat().replace(":", "-").replace(".", "-"),
