@@ -7,8 +7,6 @@ import datetime
 import random
 import logging
 import itertools
-import statistics
-import sys
 import os
 
 import numpy
@@ -67,16 +65,16 @@ def do_interpolation_scoring(
     scorer = Scorer(target_station_dict, neighbour_station_dicts, start_date, end_date)
     scorer.nearest_k_finder.sample_up(target_station_dict, start_date, end_date)
     sum_square_errors = {}
-    total_len = len(target_station_dict["data_frame"].index.values)
+    total_len = len(target_station_dict["data_frame"])
     each_minute = target_station_dict["data_frame"].index.values
-    grouped_by_hour = numpy.array_split(each_minute, total_len / 360)
-    each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+    grouped_by_half_day = numpy.array_split(each_minute, total_len / 720)
+    each_half_day = [numpy.random.choice(day_group) for day_group in grouped_by_half_day]
 
-    hour_len = len(each_hour)
-    for current_i, date in enumerate(each_hour):
+    day_len = len(each_half_day)
+    for current_i, date in enumerate(each_half_day):
         result = score_interpolation_algorithm_at_date(scorer, date)
         if current_i % 200 == 0:
-            logging.debug("done: %.3f percent" % (100 * current_i / hour_len))
+            logging.debug("done: %.3f percent" % (100 * current_i / day_len))
         for method, square_error in result.items():
             if method not in sum_square_errors:
                 sum_square_errors[method] = {}
@@ -159,8 +157,8 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
 
 def demo():
-    start_date = "2016-01-31"
-    end_date = "2016-02-15"
+    start_date = "2016-01-31T00:00"
+    end_date = "2016-02-15T23:59"
     repository_parameters = get_repository_parameters(RepositoryParameter.START)
     score_algorithm(start_date, end_date, repository_parameters, limit=50, interpolation_name="test")
 

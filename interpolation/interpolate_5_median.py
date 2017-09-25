@@ -62,6 +62,8 @@ class Scorer:
 def score_interpolation_algorithm_at_date(scorer, date):
     t_actual = scorer.target_station_dict["data_frame"].loc[date].temperature
     results = {}
+    if numpy.isnan(t_actual):
+        return results
     results.update(scorer.score_3_nearest_neighbours(date, t_actual))
     results.update(scorer.score_5_nearest_neighbours(date, t_actual))
     results.update(scorer.score_all_neighbours(date, t_actual))

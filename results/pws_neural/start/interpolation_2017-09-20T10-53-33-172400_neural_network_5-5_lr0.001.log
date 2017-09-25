@@ -1,0 +1,116 @@
+2017-09-20 10:53:33,174 INFO ### Start new logging
+2017-09-20 10:53:33,174 INFO hidden_layer_sizes=[5, 5]
+2017-09-20 10:53:33,174 INFO learning_rate=0.001000
+2017-09-20 10:53:33,174 INFO learn month 2016-01
+2017-09-20 10:54:06,851 DEBUG old: 1252156, new: 1252155
+2017-09-20 10:54:06,852 DEBUG percentage: 100
+2017-09-20 10:54:06,908 DEBUG    dewpoint_eddh  humidity_eddh       lat       lon  pressure_eddh  \
+0            3.0           94.0  53.68937  10.13025         1023.0   
+
+   temperature_eddh  winddirection_eddh  windgust_eddh  windspeed_eddh  \
+0               3.0               160.0            0.0             7.2   
+
+   hour_0  hour_1  hour_10  hour_11  hour_12  hour_13  hour_14  hour_15  \
+0       1       0        0        0        0        0        0        0   
+
+   hour_16  hour_17  hour_18  hour_19  hour_2  hour_20  hour_21  hour_22  \
+0        0        0        0        0       0        0        0        0   
+
+   hour_23  hour_3  hour_4  hour_5  hour_6  hour_7  hour_8  hour_9  \
+0        0       0       0       0       0       0       0       0   
+
+   cloudcover_eddh_0  cloudcover_eddh_1  cloudcover_eddh_2  cloudcover_eddh_3  \
+0                  1                  0                  0                  0   
+
+   cloudcover_eddh_4  cloudcover_eddh_5  
+0                  0                  0  
+2017-09-20 10:54:06,928 DEBUG    temperature
+0          3.1
+2017-09-20 10:54:07,086 ERROR /informatik2/students/home/1kastner/.local/lib/python3.5/site-packages/sklearn/neural_network/multilayer_perceptron.py:1266: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+2017-09-20 10:54:07,086 ERROR   y = column_or_1d(y, warn=True)
+2017-09-20 10:56:02,824 INFO Training RMSE: 2.440
+2017-09-20 10:56:02,826 INFO validate with month 2016-02
+2017-09-20 10:56:19,270 DEBUG old: 523820, new: 523820
+2017-09-20 10:56:19,270 DEBUG percentage: 100
+2017-09-20 10:56:19,830 INFO Evaluation RMSE: 2.205
+2017-09-20 10:56:19,831 INFO learn month 2016-02
+2017-09-20 10:56:54,141 DEBUG old: 1171602, new: 1171602
+2017-09-20 10:56:54,142 DEBUG percentage: 100
+2017-09-20 10:58:59,412 INFO Training RMSE: 2.124
+2017-09-20 10:58:59,414 INFO validate with month 2016-03
+2017-09-20 10:59:15,275 DEBUG old: 544908, new: 544908
+2017-09-20 10:59:15,276 DEBUG percentage: 100
+2017-09-20 10:59:15,766 INFO Evaluation RMSE: 2.392
+2017-09-20 10:59:15,767 INFO learn month 2016-03
+2017-09-20 10:59:51,216 DEBUG old: 1215154, new: 1215154
+2017-09-20 10:59:51,217 DEBUG percentage: 100
+2017-09-20 11:01:38,049 INFO Training RMSE: 2.220
+2017-09-20 11:01:38,051 INFO validate with month 2016-04
+2017-09-20 11:01:53,581 DEBUG old: 558559, new: 558559
+2017-09-20 11:01:53,582 DEBUG percentage: 100
+2017-09-20 11:01:54,304 INFO Evaluation RMSE: 2.369
+2017-09-20 11:01:54,306 INFO learn month 2016-04
+2017-09-20 11:02:30,278 DEBUG old: 1216218, new: 1216216
+2017-09-20 11:02:30,279 DEBUG percentage: 100
+2017-09-20 11:08:25,640 INFO Training RMSE: 2.213
+2017-09-20 11:08:25,646 INFO validate with month 2016-05
+2017-09-20 11:08:40,484 DEBUG old: 573677, new: 573677
+2017-09-20 11:08:40,485 DEBUG percentage: 100
+2017-09-20 11:08:41,076 INFO Evaluation RMSE: 2.561
+2017-09-20 11:08:41,076 INFO learn month 2016-05
+2017-09-20 11:09:13,871 DEBUG old: 1256079, new: 1256079
+2017-09-20 11:09:13,873 DEBUG percentage: 100
+2017-09-20 11:10:54,372 INFO Training RMSE: 2.285
+2017-09-20 11:10:54,374 INFO validate with month 2016-06
+2017-09-20 11:11:09,274 DEBUG old: 546544, new: 546544
+2017-09-20 11:11:09,275 DEBUG percentage: 100
+2017-09-20 11:11:09,832 INFO Evaluation RMSE: 2.116
+2017-09-20 11:11:09,833 INFO learn month 2016-06
+2017-09-20 11:11:44,312 DEBUG old: 1243103, new: 1243103
+2017-09-20 11:11:44,314 DEBUG percentage: 100
+2017-09-20 11:14:12,178 INFO Training RMSE: 2.124
+2017-09-20 11:14:12,181 INFO validate with month 2016-07
+2017-09-20 11:14:28,074 DEBUG old: 518221, new: 518221
+2017-09-20 11:14:28,076 DEBUG percentage: 100
+2017-09-20 11:14:29,010 INFO Evaluation RMSE: 1.862
+2017-09-20 11:14:29,011 INFO learn month 2016-07
+2017-09-20 11:15:03,368 DEBUG old: 1206116, new: 1206116
+2017-09-20 11:15:03,369 DEBUG percentage: 100
+2017-09-20 11:17:13,788 INFO Training RMSE: 1.883
+2017-09-20 11:17:13,793 INFO validate with month 2016-08
+2017-09-20 11:17:29,019 DEBUG old: 488312, new: 488312
+2017-09-20 11:17:29,028 DEBUG percentage: 100
+2017-09-20 11:17:29,489 INFO Evaluation RMSE: 2.063
+2017-09-20 11:17:29,490 INFO learn month 2016-08
+2017-09-20 11:18:02,166 DEBUG old: 1126974, new: 1126962
+2017-09-20 11:18:02,168 DEBUG percentage: 100
+2017-09-20 11:19:58,650 INFO Training RMSE: 2.054
+2017-09-20 11:19:58,652 INFO validate with month 2016-09
+2017-09-20 11:20:12,952 DEBUG old: 535145, new: 535145
+2017-09-20 11:20:12,953 DEBUG percentage: 100
+2017-09-20 11:20:13,878 INFO Evaluation RMSE: 2.140
+2017-09-20 11:20:13,878 INFO learn month 2016-09
+2017-09-20 11:20:46,897 DEBUG old: 1206983, new: 1206983
+2017-09-20 11:20:46,898 DEBUG percentage: 100
+2017-09-20 11:22:47,117 INFO Training RMSE: 2.169
+2017-09-20 11:22:47,119 INFO validate with month 2016-10
+2017-09-20 11:23:02,393 DEBUG old: 497876, new: 497871
+2017-09-20 11:23:02,396 DEBUG percentage: 100
+2017-09-20 11:23:03,332 INFO Evaluation RMSE: 2.308
+2017-09-20 11:23:03,333 INFO learn month 2016-10
+2017-09-20 11:23:36,426 DEBUG old: 1151208, new: 1151208
+2017-09-20 11:23:36,430 DEBUG percentage: 100
+2017-09-20 11:25:48,095 INFO Training RMSE: 2.040
+2017-09-20 11:25:48,097 INFO validate with month 2016-11
+2017-09-20 11:26:01,962 DEBUG old: 385103, new: 385103
+2017-09-20 11:26:01,963 DEBUG percentage: 100
+2017-09-20 11:26:02,745 INFO Evaluation RMSE: 3.472
+2017-09-20 11:26:02,746 INFO learn month 2016-11
+2017-09-20 11:26:34,431 DEBUG old: 894139, new: 894017
+2017-09-20 11:26:34,432 DEBUG percentage: 100
+2017-09-20 11:29:06,698 INFO Training RMSE: 2.656
+2017-09-20 11:29:06,701 INFO validate with month 2016-12
+2017-09-20 11:29:20,648 DEBUG old: 487723, new: 487723
+2017-09-20 11:29:20,650 DEBUG percentage: 100
+2017-09-20 11:29:21,496 INFO Evaluation RMSE: 2.349
+2017-09-20 11:29:21,499 INFO {'nesterovs_momentum': True, 'beta_1': 0.9, 'beta_2': 0.999, 'shuffle': True, 'learning_rate_init': 0.001, 'verbose': False, 'alpha': 0.0001, 'epsilon': 1e-08, 'early_stopping': False, 'validation_fraction': 0.1, 'warm_start': False, 'tol': 0.0001, 'activation': 'relu', 'hidden_layer_sizes': [5, 5], 'random_state': None, 'max_iter': 200, 'learning_rate': 'constant', 'momentum': 0.9, 'power_t': 0.5, 'solver': 'adam', 'batch_size': 'auto'}
