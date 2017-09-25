@@ -108,7 +108,7 @@ def load_data(file_name, start_date, end_date, verbose=False):
                 and attribute not in ("lat", "lon") 
                 and not attribute.startswith("hour_") 
                 and not attribute.startswith("month_")
-                and not "cloudcover" in attribute
+                and "cloudcover" not in attribute
         ):
             if verbose:
                 logging.debug("drop input: %s" % attribute)

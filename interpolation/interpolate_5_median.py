@@ -26,10 +26,11 @@ pandas.set_option("display.max_rows", 5)
 
 
 class Scorer:
-    def __init__(self, target_station_dict, neighbour_station_dicts, start_date, end_date):
+    def __init__(self, target_station_dict, neighbour_station_dicts, start_date, end_date, median_size=5):
         self.target_station_dict = target_station_dict
         self.nearest_k_finder = NearestKFinder(neighbour_station_dicts, start_date, end_date)
         self.key = "interpolation_distance_" + self.target_station_dict["name"]
+        self.median_size = median_size
 
     def score_3_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.find_k_median_neighbours(date, 3)
@@ -49,7 +50,7 @@ class Scorer:
         )
         for neighbour_dict in neighbour_dicts:
             temperatures_and_distances = self.nearest_k_finder.find_k_nearest_neighbours(
-                neighbour_dict, date, 5,  # <- hence the name of the script
+                neighbour_dict, date, self.median_size,  # <- hence the name of the script
                 cache=False
             )
             temperatures, distances = zip(*temperatures_and_distances)
