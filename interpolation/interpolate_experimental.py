@@ -16,8 +16,8 @@ from filter_weather_data.filters import StationRepository
 from filter_weather_data import get_repository_parameters
 from filter_weather_data import RepositoryParameter
 
-from .interpolator.nearest_k_finder import NearestKFinder
-from .interpolator.statistical_interpolator_experimental import get_interpolation_results
+from interpolation.interpolator.nearest_k_finder import NearestKFinder
+from interpolation.interpolator.statistical_interpolator_experimental import get_interpolation_results
 
 
 class Scorer:
@@ -94,9 +94,9 @@ def do_interpolation_scoring(
     sum_square_errors = {}
     total_len = len(target_station_dict["data_frame"].index.values)
     each_minute = target_station_dict["data_frame"].index.values
-    grouped_by_hour = numpy.array_split(each_minute, total_len / 60)
-    each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
-    for current_i, date in enumerate(each_hour):
+    grouped_by_half_day = numpy.array_split(each_minute, total_len / 720)  # 12h
+    each_half_day = [numpy.random.choice(hour_group) for hour_group in grouped_by_half_day]
+    for current_i, date in enumerate(each_half_day):
         result = score_interpolation_algorithm_at_date(scorer, date)
         for method, square_error in result.items():
             if method not in sum_square_errors:
@@ -107,7 +107,9 @@ def do_interpolation_scoring(
                 sum_square_errors[method]["total"] += square_error
                 sum_square_errors[method]["n"] += 1
 
-    for method, result in sum_square_errors.items():
+    method_and_result = list(sum_square_errors.items())
+    method_and_result.sort(key=lambda x: x[0])
+    for method, result in method_and_result:
         if sum_square_errors[method]["n"] > 0:
             method_rmse = numpy.sqrt(sum_square_errors[method]["total"] / sum_square_errors[method]["n"])
         else:
@@ -179,7 +181,7 @@ def score_algorithm(start_date, end_date, repository_parameters, limit=0, interp
 
 def demo():
     start_date = "2016-01-31"
-    end_date = "2016-12-31"  # "2016-02-01"
+    end_date = "2016-02-01"
     repository_parameters = get_repository_parameters(RepositoryParameter.ONLY_OUTDOOR_AND_SHADED)
     score_algorithm(start_date, end_date, repository_parameters, limit=60, interpolation_name="test")
 
