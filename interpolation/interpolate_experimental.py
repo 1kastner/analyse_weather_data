@@ -25,14 +25,6 @@ class Scorer:
         self.target_station_dict = target_station_dict
         self.nearest_k_finder = NearestKFinder(neighbour_station_dicts, start_date, end_date)
 
-    def score_3_nearest_neighbours(self, date, t_actual):
-        relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 3)
-        return get_interpolation_results(relevant_neighbours, t_actual, "_cn3")
-
-    def score_5_nearest_neighbours(self, date, t_actual):
-        relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 5)
-        return get_interpolation_results(relevant_neighbours, t_actual, "_cn5")
-
     def score_all_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, -1)
         return get_interpolation_results(relevant_neighbours, t_actual, "_all")
@@ -41,8 +33,6 @@ class Scorer:
 def score_interpolation_algorithm_at_date(scorer, date):
     t_actual = scorer.target_station_dict["data_frame"].loc[date].temperature
     results = {}
-    results.update(scorer.score_3_nearest_neighbours(date, t_actual))
-    results.update(scorer.score_5_nearest_neighbours(date, t_actual))
     results.update(scorer.score_all_neighbours(date, t_actual))
     return results
 
