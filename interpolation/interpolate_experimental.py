@@ -16,9 +16,7 @@ from filter_weather_data.filters import StationRepository
 from filter_weather_data import get_repository_parameters
 from filter_weather_data import RepositoryParameter
 
-from .interpolator.delaunay_triangulator import DelaunayTriangulator
 from .interpolator.nearest_k_finder import NearestKFinder
-from . import load_airport
 from .interpolator.statistical_interpolator_experimental import get_interpolation_results
 
 
@@ -26,20 +24,6 @@ class Scorer:
     def __init__(self, target_station_dict, neighbour_station_dicts, start_date, end_date):
         self.target_station_dict = target_station_dict
         self.nearest_k_finder = NearestKFinder(neighbour_station_dicts, start_date, end_date)
-        self.delaunay_triangulator = DelaunayTriangulator(neighbour_station_dicts, start_date, end_date)
-        self.airport_df = load_airport("EDDH", start_date, end_date)
-
-    def score_nearest_neighbour(self, date, t_actual):
-        neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 1)
-        if len(neighbours) == 1:
-            t_nb = neighbours[0][0]
-            return (t_nb - t_actual) ** 2
-        else:
-            return numpy.nan
-
-    def score_airport(self, date, t_actual):
-        t_eddh = self.airport_df.loc[date].temperature
-        return (t_eddh - t_actual) ** 2
 
     def score_3_nearest_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 3)
@@ -49,10 +33,6 @@ class Scorer:
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, 5)
         return get_interpolation_results(relevant_neighbours, t_actual, "_cn5")
 
-    def score_delaunay_neighbours(self, date, t_actual):
-        relevant_neighbours = self.delaunay_triangulator.find_delaunay_neighbours(self.target_station_dict, date)
-        return get_interpolation_results(relevant_neighbours, t_actual, "_dt")
-
     def score_all_neighbours(self, date, t_actual):
         relevant_neighbours = self.nearest_k_finder.find_k_nearest_neighbours(self.target_station_dict, date, -1)
         return get_interpolation_results(relevant_neighbours, t_actual, "_all")
@@ -60,14 +40,10 @@ class Scorer:
 
 def score_interpolation_algorithm_at_date(scorer, date):
     t_actual = scorer.target_station_dict["data_frame"].loc[date].temperature
-    results = {
-        "nn": scorer.score_nearest_neighbour(date, t_actual),
-        "eddh": scorer.score_airport(date, t_actual),
-    }
+    results = {}
     results.update(scorer.score_3_nearest_neighbours(date, t_actual))
     results.update(scorer.score_5_nearest_neighbours(date, t_actual))
     results.update(scorer.score_all_neighbours(date, t_actual))
-    results.update(scorer.score_delaunay_neighbours(date, t_actual))
     return results
 
 
