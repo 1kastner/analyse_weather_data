@@ -18,8 +18,8 @@ import matplotlib.lines as mlines
 from gather_weather_data.husconet import load_husconet_temperature_average
 from filter_weather_data.filters import StationRepository
 from filter_weather_data.filters import PROCESSED_DATA_DIR
-from . import insert_nans
-from . import style_year_2016_plot
+from plot_weather_data import insert_nans
+from plot_weather_data import style_year_2016_plot
 
 
 def plot_station(title, weather_stations, summary_dir, start_date, end_date):
@@ -40,20 +40,25 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
 
     fig = pyplot.figure()
     fig.canvas.set_window_title(title)
+    pyplot.rcParams['savefig.dpi'] = 300
 
     station_repository = StationRepository(weather_stations, summary_dir)
-    station_dicts = station_repository.load_all_stations(start_date, end_date)
+    station_dicts = station_repository.load_all_stations(
+        start_date,
+        end_date,
+        # limit=10  # for testing purposes
+    )
     for station_dict in station_dicts:
         logging.debug("prepare plotting " + station_dict["name"])
         station_df = station_dict['data_frame']
         station_df = insert_nans(station_df)  # discontinue line if gap is too big
-        pyplot.plot(station_df.index, station_df.temperature, color='gray', alpha=.8)
+        pyplot.plot(station_df.index, station_df.temperature, linewidth=.4, color='gray', alpha=.8)
 
     logging.debug("load husconet")
     husconet_station_df = load_husconet_temperature_average(start_date, end_date)
 
     logging.debug("start plotting")
-    pyplot.plot(husconet_station_df.index, husconet_station_df.temperature, color="blue",
+    pyplot.plot(husconet_station_df.index, husconet_station_df.temperature, color="blue", linewidth=.4,
                 label="Referenznetzwerk")
     # upper_line = (husconet_station_df.temperature + husconet_station_df.temperature_std * 3)
     # ax = upper_line.plot(color="green", alpha=0.4, label="avg(HUSCONET) + 3 $\sigma$(HUSCONET)")
@@ -62,10 +67,13 @@ def plot_station(title, weather_stations, summary_dir, start_date, end_date):
     style_year_2016_plot(ax)
 
     logging.debug("show plot")
-    lines, labels = ax.get_legend_handles_labels()
-    gray_line = mlines.Line2D([], [], color='gray', label="Crowdsourced")
-    ax.legend(lines[len(station_dicts):] + [gray_line],
-              labels[len(station_dicts):] + [gray_line.get_label()], loc='best')
+    gray_line = mlines.Line2D([], [], color='gray', label="private Wetterstationen")  # only one entry for many
+    blue_line = mlines.Line2D([], [], color="blue", label="Referenznetzwerk")  # proper line width to see color
+    ax.legend(
+        [blue_line, gray_line],
+        [blue_line.get_label(), gray_line.get_label()],
+        loc='best'
+    )
     pyplot.show()
 
 
@@ -97,8 +105,8 @@ def plot_whole_filtering_pipe():
         os.path.join(filtered_stations_dir, "station_dicts_shaded.csv"),
         os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_of_shaded_stations")
     )
-    start_date = "2016-01-01"
-    end_date = "2016-12-31"
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59"
     plot_station(*start, start_date, end_date)
     plot_station(*frequent_reports, start_date, end_date)
     plot_station(*only_outdoor, start_date, end_date)

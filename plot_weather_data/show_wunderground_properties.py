@@ -19,7 +19,6 @@ seaborn.set(style='ticks')
 
 def plot_stations(data, start_date, end_date, time_zone=None, limit=0):
     """
-    Plots all HUSCONET weather stations in the background.
     """
     plot_df = pandas.DataFrame()
 
@@ -39,38 +38,23 @@ def plot_stations(data, start_date, end_date, time_zone=None, limit=0):
     pyplot.grid(color='.8')  # a very light gray
     pyplot.show()
 
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     filtered_stations_dir = os.path.join(
         PROCESSED_DATA_DIR,
         "filtered_stations"
     )
-    before = (
-        "ungefiltert",
-        os.path.join(PROCESSED_DATA_DIR, "private_weather_stations.csv"),
-        os.path.join(PROCESSED_DATA_DIR, "station_summaries")
-    )
     start = (
         "alle Temperaturen \nüber -31,7 °C",
         os.path.join(filtered_stations_dir, "station_dicts_with_valid_position.csv"),
         os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_no_extreme_values")
-    )
-    frequent_reports = (
-        "regelmäßige Daten",
-        os.path.join(filtered_stations_dir, "station_dicts_frequent.csv"),
-        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_frequent")
-    )
-    only_outdoor = (
-        "draußen",
-        os.path.join(filtered_stations_dir, "station_dicts_outdoor.csv"),
-        os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_frequent")
     )
     only_outdoor_and_shaded = (
         "gefiltert",
         os.path.join(filtered_stations_dir, "station_dicts_shaded.csv"),
         os.path.join(PROCESSED_DATA_DIR, "filtered_station_summaries_of_shaded_stations")
     )
-    start_date = "2016-01-01"
-    end_date = "2016-12-31"
-    #plot_stations([before], start_date, end_date, time_zone=GermanWinterTime())
+    start_date = "2016-01-01T00:00"
+    end_date = "2016-12-31T23:59"
     plot_stations([start, only_outdoor_and_shaded], start_date, end_date)

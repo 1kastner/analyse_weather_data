@@ -37,6 +37,19 @@ HUSCONET_STATIONS = [
     "ZOM",
 ]
 
+OFFICIAL_HUSCONET_NAME = {
+    "HCM": "HC",
+    "IHM": "Nst",
+    "LGM": "LaG",
+    "LWM": "LaW",
+    "RIM": "Ri",
+    "SGM": "StG",
+    "SWM": "StW",
+    "WGM": "WiG",
+    "WWM": "WiW",
+    "ZOM": "Bi",
+}
+
 
 class GermanWinterTime(datetime.tzinfo):
     """

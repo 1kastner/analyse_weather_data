@@ -56,7 +56,7 @@ def plot_station(station, start_date, end_date):
     fig.canvas.set_window_title(station + "temperature regressed on radiation")
 
     pyplot.scatter(X, Y, marker="x", color="gray")
-    pyplot.plot(X, numpy.poly1d(numpy.polyfit(X, Y, 1))(X), color="blue", alpha=.8, label=station)
+    pyplot.plot(X, numpy.poly1d(numpy.polyfit(X, Y, 1))(X), color="gray", alpha=.8, label=station)
     pyplot.gca().set_ylabel(r'Globalstrahlung ($\frac{W}{m^2}$)')
     pyplot.gca().set_xlabel('Temperaturdifferenz Crowdsourced - Referenznetzwerk (°C)')
     pyplot.show()

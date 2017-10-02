@@ -10,6 +10,7 @@ from matplotlib import ticker as mticker
 import seaborn
 
 from gather_weather_data.husconet import HUSCONET_STATIONS
+from gather_weather_data.husconet import OFFICIAL_HUSCONET_NAME
 from filter_weather_data.filters import PROCESSED_DATA_DIR
 
 seaborn.set(style='ticks')
@@ -28,7 +29,7 @@ def plot_stations():
         csv_file = os.path.join(PROCESSED_DATA_DIR, "husconet", husconet_station + ".csv")
         logging.debug("loading " + csv_file)
         husconet_station_df = pandas.read_csv(csv_file, index_col="datetime", parse_dates=["datetime"])
-        plot_df[husconet_station] = husconet_station_df.temperature
+        plot_df[OFFICIAL_HUSCONET_NAME[husconet_station]] = husconet_station_df.temperature
 
     logging.debug("start plotting")
     ax = seaborn.boxplot(data=plot_df, width=.5)

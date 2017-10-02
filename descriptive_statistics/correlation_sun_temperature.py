@@ -3,6 +3,7 @@
 """
 
 from matplotlib import pyplot
+import matplotlib.ticker as mticker
 
 from filter_weather_data import RepositoryParameter
 from filter_weather_data import get_repository_parameters
@@ -16,13 +17,13 @@ def check_correlation(start_date, end_date):
     reference_radiation_df = load_husconet_radiation_average(start_date, end_date)
 
     r_and_p_values = [check_station(station_dict["data_frame"], reference_temperature_df,
-                                             reference_radiation_df, just_check_correlation=True)
-                               for station_dict in station_dicts]
+                                    reference_radiation_df, just_check_correlation=True)
+                      for station_dict in station_dicts]
     r_values = []
     for r_value, p_value in r_and_p_values:
         if p_value < .05:
             r_values.append(r_value)
-    pyplot.hist(r_values, 10)
+    pyplot.hist(r_values, 10, color="gray")
     pyplot.xlim(-1, 1)
     pyplot.xlabel("Korrelationskoeffizient $r$")
     pyplot.ylabel("Anzahl PWS")
