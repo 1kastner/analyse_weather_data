@@ -69,11 +69,11 @@ def do_interpolation_scoring(
     sum_square_errors = {}
     total_len = len(target_station_dict["data_frame"].index.values)
     each_minute = target_station_dict["data_frame"].index.values
-    grouped_by_hour = numpy.array_split(each_minute, total_len / 360)
-    each_hour = [numpy.random.choice(hour_group) for hour_group in grouped_by_hour]
+    grouped_by_quarter_day = numpy.array_split(each_minute, total_len / 360)  # 6h
+    each_quarter_day = [numpy.random.choice(hour_group) for hour_group in grouped_by_quarter_day]
 
-    hour_len = len(each_hour)
-    for current_i, date in enumerate(each_hour):
+    hour_len = len(each_quarter_day)
+    for current_i, date in enumerate(each_quarter_day):
         result = score_interpolation_algorithm_at_date(scorer, date)
         if current_i % 200 == 0:
             logging.debug("done: %.3f percent" % (100 * current_i / hour_len))

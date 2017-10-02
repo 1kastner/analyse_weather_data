@@ -67,7 +67,7 @@ def do_interpolation_scoring(
     sum_square_errors = {}
     total_len = len(target_station_dict["data_frame"])
     each_minute = target_station_dict["data_frame"].index.values
-    grouped_by_half_day = numpy.array_split(each_minute, total_len / 720)
+    grouped_by_half_day = numpy.array_split(each_minute, total_len / 720)  # 12h
     each_half_day = [numpy.random.choice(day_group) for day_group in grouped_by_half_day]
 
     day_len = len(each_half_day)
