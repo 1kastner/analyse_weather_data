@@ -5,7 +5,6 @@ Depends on filter_weather_data.filters.preparation.average_husconet_temperature
 import logging
 
 from matplotlib import pyplot
-import matplotlib.dates as mdates
 
 from filter_weather_data.filters import StationRepository
 from gather_weather_data.husconet import GermanWinterTime
