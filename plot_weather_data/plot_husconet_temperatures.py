@@ -42,7 +42,7 @@ def plot_stations():
     leg = pyplot.legend()
     for line in leg.get_lines():
         line.set_linewidth(1)  # .4 is too small
-    #pyplot.show()
+    pyplot.show()
 
     max_temperature_diff = 0
     for t1, t2 in itertools.combinations(temperatures, 2):
